@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Órbita — Dashboard
 
-## Getting Started
+Frontend de Órbita: un CRM conversacional multi-tenant con agentes de IA sobre WhatsApp e Instagram (TikTok en la fase 1). Este repo es el dashboard, hecho con Next.js (App Router).
 
-First, run the development server:
+## Estado actual
+
+Este repo es todavía el scaffold base de `create-next-app`: no hay pantallas, cliente de API, autenticación ni capa de estado propios del producto. Todo eso se construye desde cero, consumiendo la API en [`orbita-api`](https://github.com/joler023/orbita-api) (repo `Orbita`), cuyo modelo de dominio (tenants, conversaciones, mensajes, agentes de IA, CRM, eventos) vive en `../docs/orbita-schema.dbml`.
+
+Convenciones obligatorias de desarrollo (SOLID, tipado ultra estricto — nada de `any`, testing, commits, branching) están en [`CLAUDE.md`](./CLAUDE.md).
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript 5 (`strict: true`) · Tailwind CSS 4 · ESLint 9 (flat config) · gestor de paquetes **bun**.
+
+## Cómo correrlo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Comandos comunes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+bun run build      # build de producción
+bun run start      # servir el build de producción
+bun run lint       # ESLint
+bunx tsc --noEmit  # type-check (no hay script dedicado todavía)
+```
 
-## Learn More
+No hay test runner configurado todavía — según la convención de este repo, instalarlo (Vitest + Testing Library para unitarios, Playwright para e2e) es parte de la primera feature, no un paso posterior.
 
-To learn more about Next.js, take a look at the following resources:
+## Repos relacionados
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`orbita-api`](https://github.com/joler023/orbita-api) — backend (ASP.NET Core, Clean Architecture) que consume este dashboard.
+- `../docs` — modelo de datos, historias de usuario y guía de pantallas del producto.
