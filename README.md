@@ -6,7 +6,7 @@ Frontend de Órbita: un CRM conversacional multi-tenant con agentes de IA sobre 
 
 Este repo es todavía el scaffold base de `create-next-app`: no hay pantallas, cliente de API, autenticación ni capa de estado propios del producto. Todo eso se construye desde cero, consumiendo la API en [`orbita-api`](https://github.com/joler023/orbita-api) (repo `Orbita`), cuyo modelo de dominio (tenants, conversaciones, mensajes, agentes de IA, CRM, eventos) vive en `../docs/orbita-schema.dbml`.
 
-Convenciones obligatorias de desarrollo (SOLID, tipado ultra estricto — nada de `any`, testing, commits, branching) están en [`CLAUDE.md`](./CLAUDE.md).
+Convenciones obligatorias de desarrollo (SOLID, tipado ultra estricto — nada de `any`, testing, commits, branching) están en [`CLAUDE.md`](./CLAUDE.md). Importante: los commits **nunca** llevan coautoría de IA (`Co-Authored-By`, `Claude-Session`, etc.) — el autor es siempre la persona.
 
 ## Stack
 
