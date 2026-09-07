@@ -132,3 +132,40 @@ export function formatContactActivity(iso: string): string {
     year: "numeric",
   }).format(new Date(iso));
 }
+
+export function formatRelativeActivity(iso: string, now = new Date()): string {
+  const then = new Date(iso);
+  const minutes = Math.round((now.getTime() - then.getTime()) / 60_000);
+  if (Number.isNaN(minutes)) {
+    return "—";
+  }
+  if (minutes < 1) {
+    return "ahora";
+  }
+  if (minutes < 60) {
+    return `hace ${minutes} min`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `hace ${hours} h`;
+  }
+  if (hours < 48) {
+    return "ayer";
+  }
+  const days = Math.round(hours / 24);
+  return `hace ${days} d`;
+}
+
+export function stageTone(stageName: string | null): string {
+  const name = stageName?.toLowerCase() ?? "";
+  if (name.includes("ganad")) {
+    return "bg-[#dbf2e3] text-[#13663c]";
+  }
+  if (name.includes("perdid") || name.includes("vencid")) {
+    return "bg-[#fae3e1] text-[#9a2b21]";
+  }
+  if (name.includes("propuesta")) {
+    return "bg-[#fdecd3] text-[#8a5305]";
+  }
+  return "bg-[#e9e7e1] text-[#57534e]";
+}
