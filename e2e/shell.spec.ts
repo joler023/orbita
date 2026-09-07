@@ -43,6 +43,15 @@ test("pipeline page shows the default sales stages", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Sitio web" })).toBeVisible();
 });
 
+test("contacts list shows a ficha row", async ({ page }) => {
+  await mockOrbitaApi(page, { meStatus: 200 });
+  await page.goto(`/t/${TENANT_ID}/contactos`);
+  await expect(page.getByRole("heading", { name: "Contactos" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ana Pérez" })).toBeVisible();
+  await page.getByRole("link", { name: "Ana Pérez" }).click();
+  await expect(page.getByRole("heading", { name: "Historial de conversaciones" })).toBeVisible();
+});
+
 test("mobile nav opens the drawer", async ({ page }) => {
   await mockOrbitaApi(page, { meStatus: 200 });
   await page.setViewportSize({ width: 390, height: 844 });

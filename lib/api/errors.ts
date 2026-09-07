@@ -28,6 +28,9 @@ const TITLE_COPY: Record<string, string> = {
   "Invalid stage relocate": "Las oportunidades tienen que ir a otra etapa del mismo pipeline.",
   "Opportunity not found": "No encontramos esa oportunidad.",
   "Assignee not in tenant": "Esa persona no es miembro activo de la organización.",
+  "Contact not found": "No encontramos ese contacto.",
+  "Contact already exists": "Ya existe un contacto con ese teléfono o Instagram.",
+  "Contact field already exists": "Ya existe un campo con esa clave.",
   "Unexpected error": "Algo salió mal. Inténtalo de nuevo en un momento.",
 };
 

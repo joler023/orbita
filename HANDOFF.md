@@ -6,13 +6,13 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-07** — `ORB-D05` (tablero de oportunidades) en `feature/d05-oportunidades`, apilada sobre `feature/d04-pipelines`.
+**2026-09-07** — `ORB-D02` (ficha de contacto) en `feature/d02-contactos`, apilada sobre `feature/d05-oportunidades`.
 
 ## Qué está implementado
 
 - Paleta Órbita (50–900) en Tailwind 4 y componentes base: botón, campo, modal, tabla, toast, empty state, skeleton.
 - Shell autenticado según Figma: sidebar, top bar, card de usuario, drawer móvil.
-- Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline es un kanban real (crear/mover tarjetas, filtros, SignalR). El resto empty states. Stub de marketing en `/`.
+- Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline es un kanban real. Contactos tiene listado + ficha (campos custom, tratos ligados; historial de conversación vacío hasta Track B). El resto empty states. Stub de marketing en `/`.
 - Cliente HTTP con `credentials: "include"`, tipos generados desde [`openapi/orbita.json`](./openapi/orbita.json), refresh en 401 hacia `POST /api/auth/refresh`.
 - Login, registro (register → login), 2FA en dos pasos, recuperar contraseña. Copy de error en español.
 - Vitest + Playwright.
@@ -42,4 +42,4 @@ Mientras tanto, un usuario que entra en un dispositivo nuevo sin `lastTenantId` 
 
 ## Fuera de D05
 
-Bandeja, ficha de contacto (D02), crear oportunidad desde la conversación (D06), campañas, reportes, sitio marketing.
+Bandeja, crear oportunidad desde la conversación (D06), búsqueda con pg_trgm (D03), campañas, reportes, sitio marketing. Las pantallas de Contactos son roughs hasta que Figma entregue las definitivas.

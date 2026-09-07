@@ -144,6 +144,7 @@ export async function mockOrbitaApi(
                       amount: 1500,
                       assignedToUserId: null,
                       assignedToName: null,
+                      contactId: null,
                       lastMoveEventId: null,
                       createdAt: "2026-09-07T00:00:00Z",
                     },
@@ -151,6 +152,72 @@ export async function mockOrbitaApi(
                 : [],
           })),
         }),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/contacts` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([
+          {
+            id: "11111111-1111-1111-1111-111111111111",
+            displayName: "Ana Pérez",
+            phone: "+573001112233",
+            instagramUsername: null,
+            email: "ana@shop.com",
+            channel: "whatsapp",
+            updatedAt: "2026-09-07T00:00:00Z",
+            stageName: "Propuesta",
+            amount: 1500,
+            assignedToName: "Carlos",
+          },
+        ]),
+      });
+      return;
+    }
+
+    if (
+      url.pathname === `/api/tenants/${TENANT_ID}/contacts/11111111-1111-1111-1111-111111111111` &&
+      method === "GET"
+    ) {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: "11111111-1111-1111-1111-111111111111",
+          displayName: "Ana Pérez",
+          phone: "+573001112233",
+          instagramUsername: null,
+          email: "ana@shop.com",
+          channel: "whatsapp",
+          customFields: {},
+          createdAt: "2026-09-07T00:00:00Z",
+          updatedAt: "2026-09-07T00:00:00Z",
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/contact-fields` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (
+      url.pathname ===
+        `/api/tenants/${TENANT_ID}/contacts/11111111-1111-1111-1111-111111111111/opportunities` &&
+      method === "GET"
+    ) {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([]),
       });
       return;
     }

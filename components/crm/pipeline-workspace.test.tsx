@@ -68,6 +68,7 @@ const defaultBoard = {
           amount: 1500,
           assignedToUserId: null,
           assignedToName: null,
+          contactId: null,
           lastMoveEventId: null,
           createdAt: "2026-09-07T00:00:00Z",
         },
