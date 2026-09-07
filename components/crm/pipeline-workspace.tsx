@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { PipelineKanban } from "@/components/crm/pipeline-kanban";
 import {
   createPipeline,
   createStage,
@@ -18,9 +19,18 @@ import {
   type PipelineSummary,
   type StageSummary,
 } from "@/lib/api/pipelines";
+import {
+  createOpportunity,
+  getPipelineBoard,
+  moveOpportunity,
+  type OpportunityChangedEvent,
+  type PipelineBoard,
+} from "@/lib/api/opportunities";
+import { listTeamMembers, type TeamMemberSummary } from "@/lib/api/team";
 import { toUserMessage } from "@/lib/api/errors";
+import { createCrmHubConnection, joinTenantGroup, subscribeToOpportunityChanges } from "@/lib/realtime/crm-hub";
 import { Kanban, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function PipelineWorkspace({ tenantId }: { tenantId: string }) {
   const { notify } = useToast();
@@ -31,6 +41,12 @@ export function PipelineWorkspace({ tenantId }: { tenantId: string }) {
   const [newStageOpen, setNewStageOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<StageSummary | null>(null);
   const [deletingStage, setDeletingStage] = useState<StageSummary | null>(null);
+  const [board, setBoard] = useState<PipelineBoard | null>(null);
+  const [members, setMembers] = useState<TeamMemberSummary[]>([]);
+  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [fromFilter, setFromFilter] = useState("");
+  const [toFilter, setToFilter] = useState("");
+  const localEventIds = useRef(new Set<string>());
 
   const selected = pipelines.find((pipeline) => pipeline.id === selectedId) ?? pipelines[0] ?? null;
 
@@ -59,6 +75,49 @@ export function PipelineWorkspace({ tenantId }: { tenantId: string }) {
     };
   }, [load, notify]);
 
+  const loadBoard = useCallback(async () => {
+    if (!selectedId) {
+      setBoard(null);
+      return;
+    }
+    setBoard(
+      await getPipelineBoard(tenantId, selectedId, {
+        assignedToUserId: assigneeFilter || undefined,
+        createdFrom: fromFilter ? new Date(fromFilter).toISOString() : undefined,
+        createdTo: toFilter ? new Date(`${toFilter}T23:59:59`).toISOString() : undefined,
+      }),
+    );
+  }, [assigneeFilter, fromFilter, selectedId, tenantId, toFilter]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      return;
+    }
+    void loadBoard().catch((error: unknown) => notify(toUserMessage(error), "error"));
+  }, [loadBoard, notify, selectedId]);
+
+  useEffect(() => {
+    void listTeamMembers(tenantId)
+      .then((next) => setMembers(next.filter((member) => !member.isPending)))
+      .catch(() => setMembers([]));
+  }, [tenantId]);
+
+  useEffect(() => {
+    const connection = createCrmHubConnection();
+    subscribeToOpportunityChanges(connection, (change) => {
+      if (localEventIds.current.has(change.eventId)) {
+        return;
+      }
+      setBoard((current) => (current ? applyRealtimeChange(current, change) : current));
+    });
+    void joinTenantGroup(connection, tenantId).catch(() => {
+      // The board still works without live updates.
+    });
+    return () => {
+      void connection.stop();
+    };
+  }, [tenantId]);
+
   function apply(next: PipelineSummary) {
     setPipelines((current) => {
       const exists = current.some((pipeline) => pipeline.id === next.id);
@@ -79,6 +138,40 @@ export function PipelineWorkspace({ tenantId }: { tenantId: string }) {
     } catch (error) {
       notify(toUserMessage(error), "error");
     }
+  }
+
+  async function handleMove(opportunityId: string, toStageId: string) {
+    if (!selected || !board) {
+      return;
+    }
+    const currentStage = board.stages.find((stage) =>
+      stage.opportunities.some((card) => card.id === opportunityId),
+    );
+    if (!currentStage || currentStage.id === toStageId) {
+      return;
+    }
+
+    const eventId = crypto.randomUUID();
+    localEventIds.current.add(eventId);
+    const previous = board;
+    setBoard(moveCardLocally(board, opportunityId, toStageId));
+
+    try {
+      await moveOpportunity(tenantId, opportunityId, { stageId: toStageId, eventId });
+    } catch (error) {
+      setBoard(previous);
+      localEventIds.current.delete(eventId);
+      notify(toUserMessage(error), "error");
+    }
+  }
+
+  async function handleCreate(stageId: string, title: string, amount: number | null) {
+    if (!selected) {
+      return;
+    }
+    await createOpportunity(tenantId, selected.id, { title, amount, stageId });
+    await loadBoard();
+    notify("Oportunidad creada.", "success");
   }
 
   if (loading) {
@@ -163,65 +256,89 @@ export function PipelineWorkspace({ tenantId }: { tenantId: string }) {
         </div>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {selected.stages.map((stage, index) => (
-          <article
-            key={stage.id}
-            className="flex w-72 shrink-0 flex-col rounded-xl border border-border bg-surface p-4 shadow-sm"
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex min-w-48 flex-col gap-1.5 text-sm">
+          <span className="font-medium">Responsable</span>
+          <select
+            className="h-11 rounded-xl border border-border bg-surface px-3"
+            value={assigneeFilter}
+            onChange={(event) => setAssigneeFilter(event.target.value)}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h2 className="font-semibold text-foreground">{stage.name}</h2>
-                {stage.isWon ? <p className="text-xs text-emerald-700">Ganada</p> : null}
-                {stage.isLost ? <p className="text-xs text-red-700">Perdida</p> : null}
-              </div>
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label={`Mover ${stage.name} a la izquierda`}
-                  disabled={index === 0}
-                  onClick={() =>
-                    run(async () => {
-                      const ids = selected.stages.map((item) => item.id);
-                      [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
-                      apply(await reorderStages(tenantId, selected.id, ids));
-                    })
-                  }
-                >
-                  ←
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label={`Mover ${stage.name} a la derecha`}
-                  disabled={index === selected.stages.length - 1}
-                  onClick={() =>
-                    run(async () => {
-                      const ids = selected.stages.map((item) => item.id);
-                      [ids[index + 1], ids[index]] = [ids[index], ids[index + 1]];
-                      apply(await reorderStages(tenantId, selected.id, ids));
-                    })
-                  }
-                >
-                  →
-                </Button>
-              </div>
-            </div>
-            <p className="mt-6 flex-1 text-sm text-muted">
-              Las oportunidades aparecerán aquí cuando exista el tablero (ORB-D05).
-            </p>
-            <div className="mt-4 flex gap-2">
-              <Button size="sm" variant="secondary" onClick={() => setEditingStage(stage)}>
-                Editar
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setDeletingStage(stage)}>
-                Eliminar
-              </Button>
-            </div>
-          </article>
+            <option value="">Todos</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.fullName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Input
+          type="date"
+          name="from"
+          label="Desde"
+          value={fromFilter}
+          onChange={(event) => setFromFilter(event.target.value)}
+        />
+        <Input type="date" name="to" label="Hasta" value={toFilter} onChange={(event) => setToFilter(event.target.value)} />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {selected.stages.map((stage, index) => (
+          <div key={stage.id} className="flex items-center gap-1 rounded-xl border border-border bg-surface px-2 py-1">
+            <span className="text-xs font-medium">{stage.name}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Mover ${stage.name} a la izquierda`}
+              disabled={index === 0}
+              onClick={() =>
+                run(async () => {
+                  const ids = selected.stages.map((item) => item.id);
+                  [ids[index - 1], ids[index]] = [ids[index], ids[index - 1]];
+                  apply(await reorderStages(tenantId, selected.id, ids));
+                })
+              }
+            >
+              ←
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={`Mover ${stage.name} a la derecha`}
+              disabled={index === selected.stages.length - 1}
+              onClick={() =>
+                run(async () => {
+                  const ids = selected.stages.map((item) => item.id);
+                  [ids[index + 1], ids[index]] = [ids[index], ids[index + 1]];
+                  apply(await reorderStages(tenantId, selected.id, ids));
+                })
+              }
+            >
+              →
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditingStage(stage)}>
+              Editar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setDeletingStage(stage)}>
+              Eliminar
+            </Button>
+          </div>
         ))}
       </div>
+
+      {board ? (
+        <PipelineKanban
+          board={board}
+          onMove={(opportunityId, toStageId) => void handleMove(opportunityId, toStageId)}
+          onCreate={(stageId, title, amount) => handleCreate(stageId, title, amount)}
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      )}
 
       <NameModal
         open={newPipelineOpen}
@@ -428,4 +545,45 @@ function DeleteStageModal({
       </form>
     </Modal>
   );
+}
+
+function moveCardLocally(board: PipelineBoard, opportunityId: string, toStageId: string): PipelineBoard {
+  const card = board.stages.flatMap((stage) => stage.opportunities).find((item) => item.id === opportunityId);
+  if (!card) {
+    return board;
+  }
+
+  const moved = { ...card, stageId: toStageId };
+  return {
+    ...board,
+    stages: board.stages.map((stage) => {
+      const without = stage.opportunities.filter((item) => item.id !== opportunityId);
+      const opportunities = stage.id === toStageId ? [moved, ...without] : without;
+      return {
+        ...stage,
+        opportunities,
+        amountSum: opportunities.reduce((sum, item) => sum + (item.amount ?? 0), 0),
+      };
+    }),
+  };
+}
+
+function applyRealtimeChange(board: PipelineBoard, change: OpportunityChangedEvent): PipelineBoard {
+  const card = change.opportunity;
+  if (card.pipelineId !== board.pipelineId) {
+    return board;
+  }
+
+  return {
+    ...board,
+    stages: board.stages.map((stage) => {
+      const without = stage.opportunities.filter((item) => item.id !== card.id);
+      const opportunities = stage.id === card.stageId ? [card, ...without] : without;
+      return {
+        ...stage,
+        opportunities,
+        amountSum: opportunities.reduce((sum, item) => sum + (item.amount ?? 0), 0),
+      };
+    }),
+  };
 }
