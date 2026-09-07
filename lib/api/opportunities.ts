@@ -8,6 +8,7 @@ export type OpportunitySummary = {
   amount: number | null;
   assignedToUserId: string | null;
   assignedToName: string | null;
+  contactId: string | null;
   lastMoveEventId: string | null;
   createdAt: string;
 };
@@ -64,7 +65,13 @@ export function getPipelineBoard(
 export function createOpportunity(
   tenantId: string,
   pipelineId: string,
-  body: { title: string; amount?: number | null; stageId?: string; assignedToUserId?: string },
+  body: {
+    title: string;
+    amount?: number | null;
+    stageId?: string;
+    assignedToUserId?: string;
+    contactId?: string;
+  },
 ): Promise<OpportunitySummary> {
   return apiRequest<OpportunitySummary>(`/api/tenants/${tenantId}/pipelines/${pipelineId}/opportunities`, {
     method: "POST",
