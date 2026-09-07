@@ -9,14 +9,15 @@ import { Table } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
 import {
   createContact,
-  formatContactActivity,
   formatContactChannel,
+  formatRelativeActivity,
   searchContacts,
+  stageTone,
   type ContactListItem,
 } from "@/lib/api/contacts";
 import { formatOpportunityAmount } from "@/lib/api/opportunities";
 import { toUserMessage } from "@/lib/api/errors";
-import { tenantPath } from "@/lib/navigation";
+import { initialsFromName, tenantPath } from "@/lib/navigation";
 import { Plus, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -35,7 +36,7 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
   const [rows, setRows] = useState<ContactListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [channel, setChannel] = useState("");
+  const [chip, setChip] = useState<"all" | "no-deal">("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -46,10 +47,9 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
   const load = useCallback(async () => {
     const next = await searchContacts(tenantId, {
       q: query.trim() || undefined,
-      channel: channel || undefined,
     });
     setRows(next);
-  }, [channel, query, tenantId]);
+  }, [query, tenantId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,42 +95,69 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
     }
   }
 
+  const visible = chip === "no-deal" ? rows.filter((row) => !row.stageName) : rows;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-56 flex-1 flex-wrap items-center gap-2">
-          <div className="min-w-56 flex-1">
+        <p className="text-muted">{rows.length.toLocaleString("es-CO")} registros</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => notify("Importar contactos llega en una historia siguiente.", "success")}
+          >
+            Importar
+          </Button>
+          <Button leadingIcon={<Plus className="size-4" />} onClick={() => setCreateOpen(true)}>
+            Nuevo contacto
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <div className="w-full max-w-xs">
             <Input
               name="contact-search"
-              placeholder="Buscar por nombre, teléfono o Instagram"
+              placeholder="Buscar por nombre o teléfono"
               aria-label="Buscar contactos"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               leadingIcon={<Search className="size-4" />}
             />
           </div>
-          <label className="sr-only" htmlFor="contact-channel">
-            Canal
-          </label>
-          <select
-            id="contact-channel"
-            className="h-11 rounded-xl border border-border bg-surface px-3 text-sm"
-            value={channel}
-            onChange={(event) => setChannel(event.target.value)}
-          >
-            <option value="">Todos los canales</option>
-            <option value="whatsapp">WhatsApp</option>
-            <option value="instagram">Instagram</option>
-          </select>
+          <div className="flex flex-wrap gap-1">
+            <FilterChip active={chip === "all"} onClick={() => setChip("all")}>
+              Todos {rows.length.toLocaleString("es-CO")}
+            </FilterChip>
+            <FilterChip active={chip === "no-deal"} onClick={() => setChip("no-deal")}>
+              Sin oportunidad
+            </FilterChip>
+            <FilterChip
+              onClick={() => notify("Los segmentos llegan cuando existan etiquetas de contacto.", "success")}
+            >
+              Mayoristas
+            </FilterChip>
+            <FilterChip
+              onClick={() => notify("Más filtros llegan con la búsqueda avanzada.", "success")}
+            >
+              + Filtro
+            </FilterChip>
+          </div>
         </div>
-        <Button leadingIcon={<Plus className="size-4" />} onClick={() => setCreateOpen(true)}>
-          Nuevo contacto
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => notify("Exportar contactos llega en una historia siguiente.", "success")}
+        >
+          Exportar
         </Button>
       </div>
 
       {loading ? (
         <Skeleton className="h-64" />
-      ) : rows.length === 0 ? (
+      ) : visible.length === 0 ? (
         <EmptyState
           icon={<Users className="size-8" />}
           title="Todavía no hay contactos"
@@ -143,24 +170,35 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
         />
       ) : (
         <Table columns={COLUMNS} caption="Listado de contactos">
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b border-border last:border-0">
-              <td className="px-4 py-3">
-                <Link
-                  href={tenantPath(tenantId, `contactos/${row.id}`)}
-                  className="font-medium text-orbita-700 hover:underline"
-                >
-                  {row.displayName}
-                </Link>
-                <p className="text-xs text-muted">{row.phone ?? (row.instagramUsername ? `@${row.instagramUsername}` : "—")}</p>
+          {visible.map((row) => (
+            <tr key={row.id} className="border-b border-transparent last:border-0">
+              <td className="px-3 py-1.5" colSpan={COLUMNS.length}>
+                <div className="flex flex-wrap items-center gap-3 rounded-full bg-[#f0f0f3]/70 px-4 py-2.5">
+                  <Link
+                    href={tenantPath(tenantId, `contactos/${row.id}`)}
+                    className="flex min-w-44 items-center gap-2.5 font-medium text-foreground hover:underline"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#ecebf5] text-[11px] font-semibold text-muted"
+                    >
+                      {initialsFromName(row.displayName)}
+                    </span>
+                    {row.displayName}
+                  </Link>
+                  <span className="w-28 text-sm text-muted">{formatContactChannel(row.channel)}</span>
+                  <span
+                    className={`inline-flex rounded-[10px] px-3 py-0.5 text-xs font-medium ${row.stageName ? stageTone(row.stageName) : "text-muted"}`}
+                  >
+                    {row.stageName ?? "—"}
+                  </span>
+                  <span className="min-w-24 text-sm text-muted">{formatRelativeActivity(row.updatedAt)}</span>
+                  <span className="min-w-24 text-sm font-semibold text-muted">
+                    {row.amount == null ? "---" : formatOpportunityAmount(row.amount)}
+                  </span>
+                  <span className="text-sm font-semibold text-muted">{row.assignedToName ?? "—"}</span>
+                </div>
               </td>
-              <td className="px-4 py-3 text-muted">{formatContactChannel(row.channel)}</td>
-              <td className="px-4 py-3 text-muted">{row.stageName ?? "—"}</td>
-              <td className="px-4 py-3 text-muted">{formatContactActivity(row.updatedAt)}</td>
-              <td className="px-4 py-3 text-muted">
-                {row.amount == null ? "—" : formatOpportunityAmount(row.amount)}
-              </td>
-              <td className="px-4 py-3 text-muted">{row.assignedToName ?? "—"}</td>
             </tr>
           ))}
         </Table>
@@ -223,5 +261,29 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
         </form>
       </Modal>
     </div>
+  );
+}
+
+function FilterChip({
+  active = false,
+  onClick,
+  children,
+}: {
+  active?: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-8 rounded-full px-3 text-sm font-medium ${
+        active
+          ? "bg-orbita-900 text-white"
+          : "border border-[#e6e6e6] bg-white text-muted"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

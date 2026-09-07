@@ -12,9 +12,11 @@ export function SidebarNav({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-1 flex-col gap-6" aria-label="Principal">
+    <nav className="flex flex-1 flex-col" aria-label="Principal">
       <NavGroup items={primaryNav} tenantId={tenantId} pathname={pathname} onNavigate={onNavigate} />
-      <NavGroup items={secondaryNav} tenantId={tenantId} pathname={pathname} onNavigate={onNavigate} />
+      <div className="mt-auto pt-6">
+        <NavGroup items={secondaryNav} tenantId={tenantId} pathname={pathname} onNavigate={onNavigate} />
+      </div>
     </nav>
   );
 }
@@ -42,10 +44,10 @@ function NavGroup({
               aria-current={active ? "page" : undefined}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-2.5 rounded-lg px-3.5 py-2 text-base font-medium transition-colors",
                 active
-                  ? "bg-orbita-50 text-orbita-700"
-                  : "text-muted hover:bg-orbita-50/70 hover:text-foreground",
+                  ? "bg-orbita-50 text-nav-active"
+                  : "text-muted hover:bg-white/70 hover:text-foreground",
               )}
             >
               <Icon className={cn("size-4", active ? "text-orbita-500" : "text-muted")} aria-hidden="true" />
