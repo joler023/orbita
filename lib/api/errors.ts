@@ -19,6 +19,13 @@ const TITLE_COPY: Record<string, string> = {
   "Invalid refresh token": "Tu sesión expiró. Vuelve a entrar.",
   "Invalid password reset": "El enlace para cambiar la contraseña ya no sirve. Pide uno nuevo.",
   Forbidden: "No tienes permiso para esta acción.",
+  "Pipeline not found": "No encontramos ese pipeline.",
+  "Pipeline stage not found": "No encontramos esa etapa.",
+  "Cannot delete last pipeline": "Tiene que quedar al menos un pipeline.",
+  "Cannot delete last stage": "Tiene que quedar al menos una etapa.",
+  "Stage has opportunities": "Mueve las oportunidades a otra etapa antes de borrar esta.",
+  "Pipeline has opportunities": "No se puede borrar un pipeline que todavía tiene oportunidades.",
+  "Invalid stage relocate": "Las oportunidades tienen que ir a otra etapa del mismo pipeline.",
   "Unexpected error": "Algo salió mal. Inténtalo de nuevo en un momento.",
 };
 

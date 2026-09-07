@@ -33,6 +33,15 @@ test("register then login lands on Inicio", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Bandeja" })).toBeVisible();
 });
 
+test("pipeline page shows the default sales stages", async ({ page }) => {
+  await mockOrbitaApi(page, { meStatus: 200 });
+  await page.goto(`/t/${TENANT_ID}/pipeline`);
+  await expect(page.getByRole("heading", { name: "Pipeline" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Ventas/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nuevo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ganada" })).toBeVisible();
+});
+
 test("mobile nav opens the drawer", async ({ page }) => {
   await mockOrbitaApi(page, { meStatus: 200 });
   await page.setViewportSize({ width: 390, height: 844 });

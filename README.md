@@ -4,7 +4,7 @@ Frontend de **Órbita**: un CRM conversacional multi-tenant con agentes de IA so
 
 ## Estado actual
 
-`ORB-D01` está en curso: hay sistema de diseño, shell autenticado, cliente HTTP con cookies y pantallas de login/registro. La bandeja, el CRM y el sitio público completo todavía no existen — Inicio muestra KPIs vacíos y el resto del menú son estados vacíos.
+`ORB-D01` (shell) está en PR y `ORB-D04` (pipelines y etapas) se apila encima. Inicio sigue con KPIs vacíos. El pipeline ya lista tableros y columnas; las tarjetas (ORB-D05), contactos y el sitio público todavía no.
 
 El backend vive en [`orbita-api`](https://github.com/joler023/orbita-api). Este dashboard llama a `api` directo (sin BFF), con `credentials: "include"`.
 
