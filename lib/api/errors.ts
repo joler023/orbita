@@ -26,6 +26,8 @@ const TITLE_COPY: Record<string, string> = {
   "Stage has opportunities": "Mueve las oportunidades a otra etapa antes de borrar esta.",
   "Pipeline has opportunities": "No se puede borrar un pipeline que todavía tiene oportunidades.",
   "Invalid stage relocate": "Las oportunidades tienen que ir a otra etapa del mismo pipeline.",
+  "Opportunity not found": "No encontramos esa oportunidad.",
+  "Assignee not in tenant": "Esa persona no es miembro activo de la organización.",
   "Unexpected error": "Algo salió mal. Inténtalo de nuevo en un momento.",
 };
 

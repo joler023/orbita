@@ -114,6 +114,47 @@ export async function mockOrbitaApi(
       return;
     }
 
+    if (url.pathname === `/api/tenants/${TENANT_ID}/members` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/pipelines/pipe-1/board` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pipelineId: "pipe-1",
+          pipelineName: "Ventas",
+          stages: defaultPipeline.stages.map((stage, index) => ({
+            ...stage,
+            amountSum: index === 0 ? 1500 : 0,
+            opportunities:
+              index === 0
+                ? [
+                    {
+                      id: "o1",
+                      pipelineId: "pipe-1",
+                      stageId: stage.id,
+                      title: "Sitio web",
+                      amount: 1500,
+                      assignedToUserId: null,
+                      assignedToName: null,
+                      lastMoveEventId: null,
+                      createdAt: "2026-09-07T00:00:00Z",
+                    },
+                  ]
+                : [],
+          })),
+        }),
+      });
+      return;
+    }
+
     if (url.pathname === `/api/tenants/${TENANT_ID}/pipelines` && method === "GET") {
       await route.fulfill({
         status: 200,

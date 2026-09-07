@@ -6,13 +6,13 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-07** — `ORB-D04` (pipelines y etapas) en `feature/d04-pipelines`, apilada sobre `feature/d01-dashboard-shell` (PR #2).
+**2026-09-07** — `ORB-D05` (tablero de oportunidades) en `feature/d05-oportunidades`, apilada sobre `feature/d04-pipelines`.
 
 ## Qué está implementado
 
 - Paleta Órbita (50–900) en Tailwind 4 y componentes base: botón, campo, modal, tabla, toast, empty state, skeleton.
 - Shell autenticado según Figma: sidebar, top bar, card de usuario, drawer móvil.
-- Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline lista tableros/etapas reales. El resto empty states. Stub de marketing en `/`.
+- Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline es un kanban real (crear/mover tarjetas, filtros, SignalR). El resto empty states. Stub de marketing en `/`.
 - Cliente HTTP con `credentials: "include"`, tipos generados desde [`openapi/orbita.json`](./openapi/orbita.json), refresh en 401 hacia `POST /api/auth/refresh`.
 - Login, registro (register → login), 2FA en dos pasos, recuperar contraseña. Copy de error en español.
 - Vitest + Playwright.
@@ -40,6 +40,6 @@ Mientras tanto, un usuario que entra en un dispositivo nuevo sin `lastTenantId` 
 2. `bun install && bun dev`.
 3. Regenerar tipos si cambia el contrato: levantar la API, `bun run refresh:openapi`, `bun run generate:api`. No editar `lib/api/generated/schema.d.ts` a mano.
 
-## Fuera de D04
+## Fuera de D05
 
-Bandeja, ficha de contacto (D02), kanban de oportunidades (D05), campañas, reportes reales, SignalR, sitio marketing completo.
+Bandeja, ficha de contacto (D02), crear oportunidad desde la conversación (D06), campañas, reportes, sitio marketing.

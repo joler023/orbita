@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`orbita-front` is the dashboard frontend for Órbita: a multi-tenant conversational CRM (WhatsApp + Instagram, TikTok in phase 1) with AI agents. **ORB-D01** landed the design system, authenticated shell, cookie-based API client, and login/register. **ORB-D04** adds pipeline/stage management on `/t/[tenantId]/pipeline`. Inbox, contacts, and the kanban cards (D05) are still placeholders.
+`orbita-front` is the dashboard frontend for Órbita: a multi-tenant conversational CRM (WhatsApp + Instagram, TikTok in phase 1) with AI agents. **ORB-D01** landed the design system, authenticated shell, cookie-based API client, and login/register. **ORB-D04** manages pipelines/stages. **ORB-D05** is the kanban on `/t/[tenantId]/pipeline` (optimistic moves + SignalR). Inbox and contacts are still placeholders.
 
 The authoritative domain/data model lives in the sibling `docs` folder at `../docs/orbita-schema.dbml` (this repo doesn't include it — read it directly from that path). It describes a multi-tenant CRM: tenants → conversations/messages (WhatsApp/Instagram) → deals/pipelines, plus an AI-agent layer and an append-only events log. Any screen that lists or mutates domain data should be built against that model, not against ad-hoc shapes.
 

@@ -40,6 +40,7 @@ test("pipeline page shows the default sales stages", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Ventas/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Nuevo" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Ganada" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sitio web" })).toBeVisible();
 });
 
 test("mobile nav opens the drawer", async ({ page }) => {
