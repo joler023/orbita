@@ -1,26 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f5fb;
+  --foreground: #1c0d52;
+  --surface: #ffffff;
+  --muted: #6b6578;
+  --border: #e7e3f4;
+  --orbita-50: #f1ecfe;
+  --orbita-100: #dcd2fd;
+  --orbita-200: #beacfb;
+  --orbita-300: #9c81f8;
+  --orbita-400: #7b57f4;
+  --orbita-500: #5b2ef0;
+  --orbita-600: #4a24cc;
+  --orbita-700: #3a1ca3;
+  --orbita-800: #2b147b;
+  --orbita-900: #1c0d52;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-orbita-50: var(--orbita-50);
+  --color-orbita-100: var(--orbita-100);
+  --color-orbita-200: var(--orbita-200);
+  --color-orbita-300: var(--orbita-300);
+  --color-orbita-400: var(--orbita-400);
+  --color-orbita-500: var(--orbita-500);
+  --color-orbita-600: var(--orbita-600);
+  --color-orbita-700: var(--orbita-700);
+  --color-orbita-800: var(--orbita-800);
+  --color-orbita-900: var(--orbita-900);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-xl: 0.75rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
