@@ -7,7 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "http://localhost:3000",
   "Access-Control-Allow-Credentials": "true",
   "Access-Control-Allow-Headers": "content-type,accept",
-  "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+};
+
+const defaultPipeline = {
+  id: "pipe-1",
+  name: "Ventas",
+  isDefault: true,
+  stages: [
+    { id: "s1", name: "Nuevo", sortOrder: 0, isWon: false, isLost: false },
+    { id: "s2", name: "En conversación", sortOrder: 1, isWon: false, isLost: false },
+    { id: "s3", name: "Propuesta", sortOrder: 2, isWon: false, isLost: false },
+    { id: "s4", name: "Ganada", sortOrder: 3, isWon: true, isLost: false },
+    { id: "s5", name: "Perdida", sortOrder: 4, isWon: false, isLost: true },
+  ],
 };
 
 export async function mockOrbitaApi(
@@ -97,6 +110,15 @@ export async function mockOrbitaApi(
           email: "ana@orbita.test",
           fullName: "Ana Pérez",
         }),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/pipelines` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([defaultPipeline]),
       });
       return;
     }

@@ -1,12 +1,10 @@
-import { ModulePlaceholder } from "@/components/shell/module-placeholder";
-import { Kanban } from "lucide-react";
+import { PipelineWorkspace } from "@/components/crm/pipeline-workspace";
 
-export default function PipelinePage() {
-  return (
-    <ModulePlaceholder
-      icon={Kanban}
-      title="El pipeline llega después"
-      description="Aquí verás el tablero de oportunidades. Aún no hay etapas ni tarjetas que mover."
-    />
-  );
+export default async function PipelinePage({
+  params,
+}: {
+  params: Promise<{ tenantId: string }>;
+}) {
+  const { tenantId } = await params;
+  return <PipelineWorkspace tenantId={tenantId} />;
 }
