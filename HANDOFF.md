@@ -6,7 +6,7 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-07** — `ORB-D02` (ficha de contacto) en `feature/d02-contactos`, apilada sobre `feature/d05-oportunidades`.
+**2026-09-09** — `ORB-D03` (búsqueda de contactos) en `feature/d03-busqueda`, apilada sobre `feature/figma-alignment`. El listado sigue siendo un borrador visual.
 
 ## Qué está implementado
 
@@ -42,4 +42,4 @@ Mientras tanto, un usuario que entra en un dispositivo nuevo sin `lastTenantId` 
 
 ## Fuera de D05
 
-Bandeja, crear oportunidad desde la conversación (D06), búsqueda con pg_trgm (D03), campañas, reportes, sitio marketing. Las pantallas de Contactos son roughs hasta que Figma entregue las definitivas.
+Bandeja, crear oportunidad desde la conversación (D06), campañas, reportes, sitio marketing. Las pantallas siguen siendo roughs fáciles de reemplazar cuando llegue Figma.
