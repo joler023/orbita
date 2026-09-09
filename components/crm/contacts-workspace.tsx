@@ -122,6 +122,7 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
               name="contact-search"
               placeholder="Buscar por nombre o teléfono"
               aria-label="Buscar contactos"
+              hint="Borrador: también encuentra nombres incompletos o con errores."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               leadingIcon={<Search className="size-4" />}
