@@ -14,7 +14,13 @@ export function SidebarNav({
   return (
     <nav className="flex flex-1 flex-col gap-6" aria-label="Principal">
       <NavGroup items={primaryNav} tenantId={tenantId} pathname={pathname} onNavigate={onNavigate} />
-      <NavGroup items={secondaryNav} tenantId={tenantId} pathname={pathname} onNavigate={onNavigate} />
+      <NavGroup
+        items={secondaryNav}
+        tenantId={tenantId}
+        pathname={pathname}
+        onNavigate={onNavigate}
+        className="mt-auto"
+      />
     </nav>
   );
 }
@@ -24,14 +30,16 @@ function NavGroup({
   tenantId,
   pathname,
   onNavigate,
+  className,
 }: {
   items: NavItem[];
   tenantId: string;
   pathname: string;
   onNavigate?: () => void;
+  className?: string;
 }) {
   return (
-    <ul className="flex flex-col gap-1">
+    <ul className={cn("flex flex-col gap-1", className)}>
       {items.map((item) => {
         const active = isActivePath(pathname, tenantId, item.href);
         const Icon = item.icon;
