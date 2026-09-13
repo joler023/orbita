@@ -8,6 +8,8 @@
   --border: #e7e3f4;
   --sidebar: #fbf6ff;
   --sidebar-border: #ecebf5;
+  --nav-active: #2e00a2;
+  --nav-muted: #6e6b79;
   --orbita-50: #f1ecfe;
   --orbita-100: #dcd2fd;
   --orbita-200: #beacfb;
@@ -43,6 +45,8 @@
   --color-border: var(--border);
   --color-sidebar: var(--sidebar);
   --color-sidebar-border: var(--sidebar-border);
+  --color-nav-active: var(--nav-active);
+  --color-nav-muted: var(--nav-muted);
   --color-orbita-50: var(--orbita-50);
   --color-orbita-100: var(--orbita-100);
   --color-orbita-200: var(--orbita-200);
