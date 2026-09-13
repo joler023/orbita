@@ -113,6 +113,19 @@ describe("apiRequest", () => {
     vi.useRealTimers();
   });
 
+  it("lets the browser set the multipart content type for form data", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const body = new FormData();
+    body.append("file", new Blob(["hola"]), "horarios.txt");
+
+    await apiRequest<void>("/api/upload", { method: "POST", body });
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(init.headers).not.toHaveProperty("Content-Type");
+    expect(init.body).toBe(body);
+  });
+
   it("does not refresh a failed login", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ title: "Invalid credentials", detail: "no" }), {
