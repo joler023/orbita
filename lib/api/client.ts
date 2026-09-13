@@ -10,21 +10,30 @@ const NO_REFRESH_PATHS = new Set([
   "/api/organizations",
 ]);
 
+const DEFAULT_TIMEOUT_MS = 4_000;
+
 let refreshInFlight: Promise<void> | null = null;
+
+export type ApiRequestOptions = {
+  retry?: boolean;
+  timeoutMs?: number;
+};
 
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
-  options: { retry?: boolean } = {},
+  options: ApiRequestOptions = {},
 ): Promise<T> {
   const retry = options.retry ?? true;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4_000);
+  const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const abortFromCaller = () => controller.abort();
+  init.signal?.addEventListener("abort", abortFromCaller);
   let response: Response;
   try {
     response = await fetch(`${getApiBaseUrl()}${path}`, {
       ...init,
-      signal: init.signal ?? controller.signal,
+      signal: controller.signal,
       credentials: "include",
       headers: {
         Accept: "application/json",
@@ -33,17 +42,18 @@ export async function apiRequest<T>(
       },
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
+    if (isAbortError(error)) {
       throw new ApiError(0, "Unexpected error", "timeout");
     }
     throw error;
   } finally {
     clearTimeout(timeoutId);
+    init.signal?.removeEventListener("abort", abortFromCaller);
   }
 
   if (response.status === 401 && retry && shouldRefresh(path)) {
     await refreshSessionOnce();
-    return apiRequest<T>(path, init, { retry: false });
+    return apiRequest<T>(path, init, { ...options, retry: false });
   }
 
   if (!response.ok) {
@@ -59,6 +69,10 @@ export async function apiRequest<T>(
     return undefined as T;
   }
   return JSON.parse(text) as T;
+}
+
+function isAbortError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "name" in error && error.name === "AbortError";
 }
 
 function shouldRefresh(path: string): boolean {
