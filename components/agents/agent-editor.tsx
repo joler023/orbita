@@ -15,7 +15,7 @@ import {
   type SaveAiAgentRequest,
 } from "@/lib/api/ai-agents";
 import { toUserMessage } from "@/lib/api/errors";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   emptyAgentDraft,
   hasDraftErrors,
@@ -117,31 +117,45 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     }
   };
 
+  let toolsPanel: ReactNode;
+  if (catalog.status === "loading") {
+    toolsPanel = (
+      <div className="grid gap-2 md:grid-cols-2" aria-busy="true" aria-label="Cargando herramientas">
+        <Skeleton className="h-16" />
+        <Skeleton className="h-16" />
+      </div>
+    );
+  } else if (catalog.status === "error") {
+    toolsPanel = (
+      <ErrorState
+        title="No pudimos cargar las herramientas"
+        description="Tus instrucciones siguen aquí. Vuelve a intentarlo en un momento."
+        onRetry={() => {
+          setCatalog({ status: "loading" });
+          setCatalogKey((key) => key + 1);
+        }}
+      />
+    );
+  } else {
+    toolsPanel = (
+      <AgentToolsFields catalog={catalog.tools} selected={draft.tools} onChange={(tools) => change({ tools })} />
+    );
+  }
+
+  let submitLabel = "Guardar cambios";
+  if (saving) {
+    submitLabel = "Guardando…";
+  } else if (creating) {
+    submitLabel = "Crear asistente";
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Tabs label="Secciones del asistente" items={EDITOR_TABS} value={tab} onChange={setTab}>
         {tab === "instructions" ? (
           <AgentInstructionsFields draft={draft} errors={errors} onChange={change} />
-        ) : catalog.status === "loading" ? (
-          <div className="grid gap-2 md:grid-cols-2" aria-busy="true" aria-label="Cargando herramientas">
-            <Skeleton className="h-16" />
-            <Skeleton className="h-16" />
-          </div>
-        ) : catalog.status === "error" ? (
-          <ErrorState
-            title="No pudimos cargar las herramientas"
-            description="Tus instrucciones siguen aquí. Vuelve a intentarlo en un momento."
-            onRetry={() => {
-              setCatalog({ status: "loading" });
-              setCatalogKey((key) => key + 1);
-            }}
-          />
         ) : (
-          <AgentToolsFields
-            catalog={catalog.tools}
-            selected={draft.tools}
-            onChange={(tools) => change({ tools })}
-          />
+          toolsPanel
         )}
       </Tabs>
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
@@ -165,7 +179,7 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
           </Button>
         ) : null}
         <Button size="sm" onClick={() => void save()} disabled={saving || (!dirty && !creating)}>
-          {saving ? "Guardando…" : creating ? "Crear asistente" : "Guardar cambios"}
+          {submitLabel}
         </Button>
       </div>
     </div>
