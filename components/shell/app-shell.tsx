@@ -1,15 +1,12 @@
 "use client";
 
-import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
 import { getTenant, logout } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
 import { clearLocalSession, readSessionUser, type SessionUser } from "@/lib/session/storage";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { SidebarNav } from "./sidebar-nav";
+import { SidebarPanel } from "./sidebar-panel";
 import { TopBar } from "./top-bar";
-import { UserCard } from "./user-card";
 
 export function AppShell({
   tenantId,
@@ -64,16 +61,15 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-full bg-background">
-      <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r border-border bg-surface p-4 lg:flex">
-        <Logo href={`/t/${tenantId}/inicio`} />
-        <SidebarNav tenantId={tenantId} pathname={pathname} />
-        <div className="mt-auto flex flex-col gap-2">
-          <UserCard user={user} organizationName={organizationName} />
-          <Button variant="ghost" size="sm" onClick={() => void onLogout()}>
-            Cerrar sesión
-          </Button>
-        </div>
+    <div className="min-h-full bg-background">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-sidebar-border lg:block">
+        <SidebarPanel
+          tenantId={tenantId}
+          pathname={pathname}
+          user={user}
+          organizationName={organizationName}
+          onLogout={() => void onLogout()}
+        />
       </aside>
 
       {menuOpen ? (
@@ -84,20 +80,20 @@ export function AppShell({
             aria-label="Cerrar menú"
             onClick={() => setMenuOpen(false)}
           />
-          <aside className="relative z-50 flex h-full w-72 flex-col gap-6 bg-surface p-4 shadow-xl">
-            <Logo href={`/t/${tenantId}/inicio`} />
-            <SidebarNav tenantId={tenantId} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
-            <div className="mt-auto flex flex-col gap-2">
-              <UserCard user={user} organizationName={organizationName} />
-              <Button variant="ghost" size="sm" onClick={() => void onLogout()}>
-                Cerrar sesión
-              </Button>
-            </div>
+          <aside className="relative z-50 h-full w-72 shadow-xl">
+            <SidebarPanel
+              tenantId={tenantId}
+              pathname={pathname}
+              user={user}
+              organizationName={organizationName}
+              onLogout={() => void onLogout()}
+              onNavigate={() => setMenuOpen(false)}
+            />
           </aside>
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 lg:p-6">
+      <div className="flex min-w-0 flex-col gap-6 p-4 lg:ml-60 lg:p-6">
         <TopBar title={title} onOpenMenu={() => setMenuOpen(true)} />
         <main className="min-h-0 flex-1">{children}</main>
       </div>
