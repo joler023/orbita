@@ -26,13 +26,16 @@ import {
 } from "./agent-draft";
 import { AgentInstructionsFields } from "./agent-instructions-fields";
 import { AgentToolsFields } from "./agent-tools-fields";
+import { KnowledgePanel } from "./knowledge-panel";
 
-type EditorTab = "instructions" | "tools";
+type EditorTab = "instructions" | "tools" | "knowledge";
 
-const EDITOR_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
+const BASE_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
   { value: "instructions", label: "Instrucciones" },
   { value: "tools", label: "Herramientas" },
 ];
+
+const KNOWLEDGE_TAB = { value: "knowledge", label: "Conocimiento" } as const;
 
 type CatalogState = { status: "loading" } | { status: "ready"; tools: AiTool[] } | { status: "error" };
 
@@ -117,6 +120,9 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     }
   };
 
+  // Knowledge lives on a saved agent, so a draft that has never been created cannot have it yet.
+  const tabs = creating ? BASE_TABS : [...BASE_TABS, KNOWLEDGE_TAB];
+
   let toolsPanel: ReactNode;
   if (catalog.status === "loading") {
     toolsPanel = (
@@ -142,6 +148,13 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     );
   }
 
+  let panel: ReactNode = <AgentInstructionsFields draft={draft} errors={errors} onChange={change} />;
+  if (tab === "tools") {
+    panel = toolsPanel;
+  } else if (tab === "knowledge" && agent) {
+    panel = <KnowledgePanel tenantId={tenantId} agentId={agent.id} />;
+  }
+
   let submitLabel = "Guardar cambios";
   if (saving) {
     submitLabel = "Guardando…";
@@ -151,12 +164,8 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
 
   return (
     <div className="flex flex-col gap-4">
-      <Tabs label="Secciones del asistente" items={EDITOR_TABS} value={tab} onChange={setTab}>
-        {tab === "instructions" ? (
-          <AgentInstructionsFields draft={draft} errors={errors} onChange={change} />
-        ) : (
-          toolsPanel
-        )}
+      <Tabs label="Secciones del asistente" items={tabs} value={tab} onChange={setTab}>
+        {panel}
       </Tabs>
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
         {dirty && !creating ? <p className="mr-auto text-xs text-muted">Tienes cambios sin guardar.</p> : null}
