@@ -126,6 +126,23 @@ describe("apiRequest", () => {
     expect(init.body).toBe(body);
   });
 
+  it("returns the body of an accepted response", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: "d1", status: "Pending" }), { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const document = await apiRequest<{ status: string }>("/api/upload", { method: "POST" });
+
+    expect(document.status).toBe("Pending");
+  });
+
+  it("returns undefined for an accepted response without body", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 202 })));
+
+    await expect(apiRequest<void>("/api/auth/forgot-password", { method: "POST" })).resolves.toBeUndefined();
+  });
+
   it("does not refresh a failed login", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ title: "Invalid credentials", detail: "no" }), {

@@ -60,7 +60,7 @@ export async function apiRequest<T>(
     throw await parseApiError(response);
   }
 
-  if (response.status === 204 || response.status === 202) {
+  if (response.status === 204) {
     return undefined as T;
   }
 
