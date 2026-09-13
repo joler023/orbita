@@ -42,13 +42,13 @@ function NavGroup({
               aria-current={active ? "page" : undefined}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                "flex h-9 items-center gap-[11px] rounded-lg px-3.5 text-[15px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbita-500",
                 active
-                  ? "bg-orbita-50 text-orbita-700"
-                  : "text-muted hover:bg-orbita-50/70 hover:text-foreground",
+                  ? "bg-orbita-50 font-medium text-nav-active"
+                  : "text-nav-muted hover:bg-orbita-50/60 hover:text-foreground",
               )}
             >
-              <Icon className={cn("size-4", active ? "text-orbita-500" : "text-muted")} aria-hidden="true" />
+              <Icon className="size-[18px] shrink-0" aria-hidden="true" />
               {item.label}
             </Link>
           </li>
