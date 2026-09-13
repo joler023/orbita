@@ -6,10 +6,12 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentsWorkspace } from "./agents-workspace";
 
-const { listAiAgents, setAiAgentEnabled, deleteAiAgent } = vi.hoisted(() => ({
+const { listAiAgents, setAiAgentEnabled, deleteAiAgent, listAiTools, createAiAgent } = vi.hoisted(() => ({
   listAiAgents: vi.fn(),
   setAiAgentEnabled: vi.fn(),
   deleteAiAgent: vi.fn(),
+  listAiTools: vi.fn(),
+  createAiAgent: vi.fn(),
 }));
 
 vi.mock("@/lib/api/ai-agents", async () => ({
@@ -17,6 +19,8 @@ vi.mock("@/lib/api/ai-agents", async () => ({
   listAiAgents: (...args: unknown[]) => listAiAgents(...args),
   setAiAgentEnabled: (...args: unknown[]) => setAiAgentEnabled(...args),
   deleteAiAgent: (...args: unknown[]) => deleteAiAgent(...args),
+  listAiTools: (...args: unknown[]) => listAiTools(...args),
+  createAiAgent: (...args: unknown[]) => createAiAgent(...args),
 }));
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
@@ -49,6 +53,40 @@ describe("AgentsWorkspace", () => {
     listAiAgents.mockReset();
     setAiAgentEnabled.mockReset();
     deleteAiAgent.mockReset();
+    listAiTools.mockReset().mockResolvedValue([]);
+    createAiAgent.mockReset();
+  });
+
+  it("creates the first agent from the empty state and selects it", async () => {
+    const user = userEvent.setup();
+    listAiAgents.mockResolvedValue([]);
+    createAiAgent.mockResolvedValue(agent({ isEnabled: false }));
+    renderWorkspace();
+
+    await user.click(await screen.findByRole("button", { name: "Crear mi primer asistente" }));
+    await user.type(screen.getByLabelText("¿Cómo se llama tu asistente?"), "Aura");
+    await user.type(screen.getByLabelText("¿Cómo habla?"), "Cercana");
+    await user.type(screen.getByLabelText("¿Qué hace y qué nunca debe hacer?"), "Nunca inventes precios.");
+    await user.click(screen.getByRole("button", { name: "Crear asistente" }));
+
+    expect(await screen.findByRole("region", { name: "Configuración de Aura" })).toBeInTheDocument();
+    expect(screen.getByText("1 asistente · 0 activos")).toBeInTheDocument();
+  });
+
+  it("asks before leaving an agent with unsaved changes", async () => {
+    const user = userEvent.setup();
+    listAiAgents.mockResolvedValue([agent(), agent({ id: "a2", name: "Nova" })]);
+    renderWorkspace();
+
+    await user.type(await screen.findByLabelText("¿Cómo habla?"), " y breve");
+    await user.click(screen.getByRole("button", { name: /Nova/ }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Tienes cambios sin guardar");
+    expect(screen.getByRole("region", { name: "Configuración de Aura" })).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Descartar y seguir" }));
+    expect(screen.getByRole("region", { name: "Configuración de Nova" })).toBeInTheDocument();
   });
 
   it("lists the agents and opens the first one", async () => {

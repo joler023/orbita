@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -8,13 +9,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { deleteAiAgent, listAiAgents, setAiAgentEnabled, type AiAgent } from "@/lib/api/ai-agents";
 import { ApiError, toUserMessage } from "@/lib/api/errors";
-import { Bot } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Bot, Plus } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { AgentEditor } from "./agent-editor";
 import { formatAgentsMeta } from "./agent-format";
 import { AgentHeader } from "./agent-header";
 import { AgentList } from "./agent-list";
 
 type LoadState = "loading" | "ready" | "forbidden" | "error";
+
+type Selection = { kind: "agent"; id: string } | { kind: "new" };
 
 export type AgentsWorkspaceProps = {
   tenantId: string;
@@ -24,9 +28,11 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   const { notify } = useToast();
   const [state, setState] = useState<LoadState>("loading");
   const [agents, setAgents] = useState<AiAgent[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AiAgent | null>(null);
+  const [pendingSelection, setPendingSelection] = useState<Selection | null>(null);
+  const [dirty, setDirty] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -37,9 +43,13 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
           return;
         }
         setAgents(result);
-        setSelectedId((current) =>
-          current && result.some((agent) => agent.id === current) ? current : (result[0]?.id ?? null),
-        );
+        setSelection((current) => {
+          if (current?.kind === "agent" && result.some((agent) => agent.id === current.id)) {
+            return current;
+          }
+          const first = result[0];
+          return first ? { kind: "agent", id: first.id } : null;
+        });
         setState("ready");
       })
       .catch((error: unknown) => {
@@ -51,6 +61,14 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
       cancelled = true;
     };
   }, [tenantId, reloadKey]);
+
+  const select = (next: Selection) => {
+    if (dirty) {
+      setPendingSelection(next);
+      return;
+    }
+    setSelection(next);
+  };
 
   const replaceAgent = (updated: AiAgent) => {
     setAgents((current) => current.map((agent) => (agent.id === updated.id ? updated : agent)));
@@ -78,13 +96,24 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
       await deleteAiAgent(tenantId, pendingDelete.id);
       const remaining = agents.filter((agent) => agent.id !== pendingDelete.id);
       setAgents(remaining);
-      setSelectedId(remaining[0]?.id ?? null);
+      const first = remaining[0];
+      setSelection(first ? { kind: "agent", id: first.id } : null);
+      setDirty(false);
       notify(`Eliminaste a ${pendingDelete.name}.`, "success");
     } catch (error) {
       notify(toUserMessage(error), "error");
     } finally {
       setPendingDelete(null);
     }
+  };
+
+  const onSaved = (saved: AiAgent) => {
+    setAgents((current) =>
+      current.some((agent) => agent.id === saved.id)
+        ? current.map((agent) => (agent.id === saved.id ? saved : agent))
+        : [...current, saved],
+    );
+    setSelection({ kind: "agent", id: saved.id });
   };
 
   if (state === "loading") {
@@ -121,37 +150,96 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
     );
   }
 
-  if (agents.length === 0) {
+  const selectedAgent =
+    selection?.kind === "agent" ? agents.find((agent) => agent.id === selection.id) : undefined;
+
+  if (agents.length === 0 && selection?.kind !== "new") {
     return (
       <EmptyState
         icon={<Bot className="size-8" aria-hidden="true" />}
         title="Tu asistente atiende mientras tu equipo descansa"
         description="Un asistente responde a tus clientes con lo que sabe de tu negocio, a cualquier hora, y te pasa la conversación cuando hace falta una persona."
+        action={
+          <Button leadingIcon={<Plus className="size-4" aria-hidden="true" />} onClick={() => select({ kind: "new" })}>
+            Crear mi primer asistente
+          </Button>
+        }
       />
     );
   }
 
-  const selected = agents.find((agent) => agent.id === selectedId) ?? agents[0];
+  let detail: ReactNode = null;
+  if (selection?.kind === "new") {
+    detail = (
+      <section
+        aria-label="Nuevo asistente"
+        className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5"
+      >
+        <header className="border-b border-border pb-4">
+          <h2 className="text-lg font-semibold text-foreground">Nuevo asistente</h2>
+          <p className="text-sm text-muted">Queda en pausa hasta que decidas activarlo.</p>
+        </header>
+        <AgentEditor
+          key="new"
+          tenantId={tenantId}
+          agent={null}
+          onSaved={onSaved}
+          onDirtyChange={setDirty}
+          onCancelCreate={() => {
+            setDirty(false);
+            const first = agents[0];
+            setSelection(first ? { kind: "agent", id: first.id } : null);
+          }}
+        />
+      </section>
+    );
+  } else if (selectedAgent) {
+    detail = (
+      <section
+        aria-label={`Configuración de ${selectedAgent.name}`}
+        className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5"
+      >
+        <AgentHeader
+          agent={selectedAgent}
+          toggling={togglingId === selectedAgent.id}
+          onToggle={(isEnabled) => void toggle(selectedAgent, isEnabled)}
+          onDelete={() => setPendingDelete(selectedAgent)}
+        />
+        <AgentEditor
+          key={selectedAgent.id}
+          tenantId={tenantId}
+          agent={selectedAgent}
+          onSaved={onSaved}
+          onDirtyChange={setDirty}
+        />
+      </section>
+    );
+  }
+
   const activeCount = agents.filter((agent) => agent.isEnabled).length;
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted">{formatAgentsMeta(agents.length, activeCount)}</p>
       <div className="grid items-start gap-4 lg:grid-cols-[240px_1fr]">
-        <AgentList agents={agents} selectedId={selected?.id ?? null} onSelect={setSelectedId} />
-        {selected ? (
-          <section
-            aria-label={`Configuración de ${selected.name}`}
-            className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5"
-          >
-            <AgentHeader
-              agent={selected}
-              toggling={togglingId === selected.id}
-              onToggle={(isEnabled) => void toggle(selected, isEnabled)}
-              onDelete={() => setPendingDelete(selected)}
-            />
-          </section>
-        ) : null}
+        <AgentList
+          agents={agents}
+          selectedId={selectedAgent?.id ?? null}
+          onSelect={(id) => select({ kind: "agent", id })}
+          footer={
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              leadingIcon={<Plus className="size-4" aria-hidden="true" />}
+              onClick={() => select({ kind: "new" })}
+              disabled={selection?.kind === "new"}
+            >
+              Nuevo asistente
+            </Button>
+          }
+        />
+        {detail}
       </div>
       <ConfirmDialog
         open={pendingDelete !== null}
@@ -161,6 +249,19 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
         destructive
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}
+      />
+      <ConfirmDialog
+        open={pendingSelection !== null}
+        title="¿Descartar los cambios?"
+        consequence="Tienes cambios sin guardar en este asistente. Si sigues, se pierden."
+        confirmLabel="Descartar y seguir"
+        destructive
+        onConfirm={() => {
+          setDirty(false);
+          setSelection(pendingSelection);
+          setPendingSelection(null);
+        }}
+        onClose={() => setPendingSelection(null)}
       />
     </div>
   );
