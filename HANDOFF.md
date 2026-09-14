@@ -6,7 +6,7 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-14** — `ORB-D12` (sitio público) en `feature/d12-sitio-publico`, apilada sobre `feature/d03-busqueda`. Borrador sustituible.
+**2026-09-14** — `ORB-D13` (export CSV sync) en `feature/d13-exportacion`, apilada sobre `feature/d12-sitio-publico`. Async/R2 y conversaciones quedan pendientes.
 
 ## Qué está implementado
 
@@ -14,6 +14,7 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 - Shell autenticado según Figma: sidebar, top bar, card de usuario, drawer móvil.
 - Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline es un kanban real. Contactos tiene listado + ficha (campos custom, tratos ligados; historial de conversación vacío hasta Track B). El resto empty states.
 - Sitio público borrador (`ORB-D12`): `/`, `/producto`, `/precios` (simulador), `/comparativas`, `/blog`, `/contacto`. Sin Turnstile ni CMS.
+- Exportación CSV sync (`ORB-D13`): botón Exportar en Contactos y Pipeline → `GET .../exports/contacts|opportunities`.
 - Cliente HTTP con `credentials: "include"`, tipos generados desde [`openapi/orbita.json`](./openapi/orbita.json), refresh en 401 hacia `POST /api/auth/refresh`.
 - Login, registro (register → login), 2FA en dos pasos, recuperar contraseña. Copy de error en español.
 - Vitest + Playwright.
@@ -43,4 +44,4 @@ Mientras tanto, un usuario que entra en un dispositivo nuevo sin `lastTenantId` 
 
 ## Pendiente en Track D (depende de otros)
 
-Exportación async/R2 (`ORB-D13` en curso o siguiente), D06–D11/D14 bloqueados por Tracks A/B/C.
+D06–D11/D14 bloqueados por Tracks A/B/C. D13 async/R2 y export de conversaciones siguen abiertos.

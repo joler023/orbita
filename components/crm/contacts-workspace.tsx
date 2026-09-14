@@ -15,6 +15,7 @@ import {
   stageTone,
   type ContactListItem,
 } from "@/lib/api/contacts";
+import { downloadContactsExport } from "@/lib/api/exports";
 import { formatOpportunityAmount } from "@/lib/api/opportunities";
 import { toUserMessage } from "@/lib/api/errors";
 import { initialsFromName, tenantPath } from "@/lib/navigation";
@@ -150,7 +151,11 @@ export function ContactsWorkspace({ tenantId }: { tenantId: string }) {
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => notify("Exportar contactos llega en una historia siguiente.", "success")}
+          onClick={() => {
+            void downloadContactsExport(tenantId)
+              .then(() => notify("Exportación lista (CSV sync · borrador ORB-D13).", "success"))
+              .catch((error: unknown) => notify(toUserMessage(error), "error"));
+          }}
         >
           Exportar
         </Button>

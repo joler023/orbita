@@ -26,6 +26,7 @@ import {
   type OpportunityChangedEvent,
   type PipelineBoard,
 } from "@/lib/api/opportunities";
+import { downloadOpportunitiesExport } from "@/lib/api/exports";
 import { listTeamMembers, type TeamMemberSummary } from "@/lib/api/team";
 import { toUserMessage } from "@/lib/api/errors";
 import { createCrmHubConnection, joinTenantGroup, subscribeToOpportunityChanges } from "@/lib/realtime/crm-hub";
@@ -216,6 +217,17 @@ export function PipelineWorkspace({ tenantId }: { tenantId: string }) {
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              void downloadOpportunitiesExport(tenantId)
+                .then(() => notify("Exportación de oportunidades lista (CSV sync).", "success"))
+                .catch((error: unknown) => notify(toUserMessage(error), "error"));
+            }}
+          >
+            Exportar
+          </Button>
           {!selected.isDefault ? (
             <Button
               size="sm"
