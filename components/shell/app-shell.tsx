@@ -57,7 +57,9 @@ export function AppShell({
 
 
   return (
-    <div className="min-h-full bg-background">
+    // On a wide screen the frame fills the viewport and the content scrolls inside it, so
+    // the sidebar and the header never slide away. Small screens keep the page scroll.
+    <div className="min-h-full bg-background lg:h-dvh lg:overflow-hidden">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-sidebar-border lg:block">
         <SidebarPanel
           tenantId={tenantId}
@@ -87,9 +89,9 @@ export function AppShell({
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-col gap-6 p-4 lg:ml-60 lg:p-6">
+      <div className="flex min-w-0 flex-col gap-6 p-4 lg:ml-60 lg:h-dvh lg:p-6">
         <TopBar title={title} onOpenMenu={() => setMenuOpen(true)} />
-        <main className="min-h-0 flex-1">{children}</main>
+        <main className="min-h-0 flex-1 lg:overflow-y-auto">{children}</main>
       </div>
     </div>
   );
