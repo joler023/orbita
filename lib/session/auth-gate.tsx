@@ -1,22 +1,23 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCurrentUser } from "@/lib/api/auth";
+import { getCurrentUser, type CurrentUser } from "@/lib/api/auth";
+import { CurrentUserProvider } from "@/lib/session/current-user";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     getCurrentUser()
-      .then(() => {
+      .then((current) => {
         if (!cancelled) {
-          setReady(true);
+          setUser(current);
         }
       })
       .catch(() => {
@@ -30,7 +31,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     };
   }, [pathname, router]);
 
-  if (!ready) {
+  if (!user) {
     return (
       <div className="flex min-h-full flex-col gap-4 p-6">
         <Skeleton className="h-10 w-48" />
@@ -39,5 +40,5 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return children;
+  return <CurrentUserProvider user={user}>{children}</CurrentUserProvider>;
 }

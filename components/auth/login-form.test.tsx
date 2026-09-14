@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "./login-form";
 
-const { login, writeSessionUser, readLastTenantId, replace } = vi.hoisted(() => ({
+const { login, getCurrentUser, readLastTenantId, replace } = vi.hoisted(() => ({
   login: vi.fn(),
-  writeSessionUser: vi.fn(),
+  getCurrentUser: vi.fn(),
   readLastTenantId: vi.fn(),
   replace: vi.fn(),
 }));
@@ -17,19 +17,54 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/api/auth", () => ({
   login: (...args: unknown[]) => login(...args),
+  getCurrentUser: () => getCurrentUser(),
 }));
 
 vi.mock("@/lib/session/storage", () => ({
-  writeSessionUser: (...args: unknown[]) => writeSessionUser(...args),
   readLastTenantId: () => readLastTenantId(),
 }));
 
 describe("LoginForm", () => {
   beforeEach(() => {
     login.mockReset();
-    writeSessionUser.mockReset();
+    getCurrentUser.mockReset().mockResolvedValue({
+      userId: "u1",
+      email: "ana@orbita.test",
+      fullName: "Ana",
+      memberships: [{ tenantId: "tenant-1", slug: "panaderia", name: "Panadería", role: "Owner" }],
+    });
     readLastTenantId.mockReset();
     replace.mockReset();
+  });
+
+  it("goes to the only organization the account belongs to", async () => {
+    const user = userEvent.setup();
+    login.mockResolvedValue({ userId: "u1", email: "ana@orbita.test", fullName: "Ana" });
+
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("Correo"), "ana@orbita.test");
+    await user.type(screen.getByLabelText("Contraseña"), "secretsecret");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/t/tenant-1/inicio"));
+  });
+
+  it("offers to create one when the account belongs to none", async () => {
+    const user = userEvent.setup();
+    login.mockResolvedValue({ userId: "u1", email: "ana@orbita.test", fullName: "Ana" });
+    getCurrentUser.mockResolvedValue({
+      userId: "u1",
+      email: "ana@orbita.test",
+      fullName: "Ana",
+      memberships: [],
+    });
+
+    render(<LoginForm />);
+    await user.type(screen.getByLabelText("Correo"), "ana@orbita.test");
+    await user.type(screen.getByLabelText("Contraseña"), "secretsecret");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/sin-organizacion"));
   });
 
   it("shows Spanish copy for invalid credentials", async () => {
@@ -66,6 +101,6 @@ describe("LoginForm", () => {
       password: "secretsecret",
       twoFactorCode: "123456",
     });
-    expect(replace).toHaveBeenCalledWith("/t/tenant-1/inicio");
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/t/tenant-1/inicio"));
   });
 });

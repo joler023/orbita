@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { login, registerOrganization } from "@/lib/api/auth";
 import { toUserMessage } from "@/lib/api/errors";
-import { writeLastTenantId, writeSessionUser } from "@/lib/session/storage";
+import { writeLastTenantId } from "@/lib/session/storage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -30,8 +30,7 @@ export function RegisterForm() {
         email,
         password,
       });
-      const user = await login({ email, password });
-      writeSessionUser(user);
+      await login({ email, password });
       writeLastTenantId(organization.tenantId);
       router.replace(`/t/${organization.tenantId}/inicio`);
     } catch (cause) {
