@@ -1,3 +1,4 @@
+import { ToastProvider } from "@/components/ui/toast";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "./app-shell";
@@ -21,9 +22,11 @@ describe("AppShell", () => {
 
   it("keeps the sidebar out of the scrolling content column", async () => {
     render(
-      <AppShell tenantId="tenant-1">
+      <ToastProvider>
+        <AppShell tenantId="tenant-1">
         <p>Contenido de la pantalla</p>
-      </AppShell>,
+        </AppShell>
+      </ToastProvider>,
     );
 
     const main = screen.getByRole("main");
@@ -36,9 +39,11 @@ describe("AppShell", () => {
 
   it("remembers the organization so the next sign-in lands there", () => {
     render(
-      <AppShell tenantId="tenant-1">
+      <ToastProvider>
+        <AppShell tenantId="tenant-1">
         <p>Contenido</p>
-      </AppShell>,
+        </AppShell>
+      </ToastProvider>,
     );
 
     expect(window.localStorage.getItem("orbita.lastTenantId")).toBe("tenant-1");
@@ -46,9 +51,11 @@ describe("AppShell", () => {
 
   it("titles the page from the active navigation item", () => {
     render(
-      <AppShell tenantId="tenant-1">
+      <ToastProvider>
+        <AppShell tenantId="tenant-1">
         <p>Contenido</p>
-      </AppShell>,
+        </AppShell>
+      </ToastProvider>,
     );
 
     expect(screen.getByRole("heading", { level: 1, name: "Agente IA" })).toBeInTheDocument();

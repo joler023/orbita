@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreenTransition } from "@/components/ui/screen-transition";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getTenant } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
@@ -93,7 +94,9 @@ export function AppShell({
       <div className="flex min-w-0 flex-col gap-6 p-4 lg:ml-60 lg:h-dvh lg:p-6">
         <TopBar title={title} onOpenMenu={() => setMenuOpen(true)} />
         <main className="flex min-h-0 flex-1 flex-col">
-          <ScrollArea className="flex-1 max-lg:overflow-visible">{children}</ScrollArea>
+          <ScrollArea className="flex-1 max-lg:overflow-visible">
+            <ScreenTransition className="flex min-h-full flex-col">{children}</ScreenTransition>
+          </ScrollArea>
         </main>
       </div>
     </div>
