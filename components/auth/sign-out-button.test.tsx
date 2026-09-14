@@ -1,3 +1,4 @@
+import { ToastProvider } from "@/components/ui/toast";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,19 +26,28 @@ describe("SignOutButton", () => {
 
   it("ends the session and goes back to the login", async () => {
     const user = userEvent.setup();
-    render(<SignOutButton />);
+    render(
+      <ToastProvider>
+        <SignOutButton />
+      </ToastProvider>,
+    );
 
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(logout).toHaveBeenCalled();
     expect(clearLocalSession).toHaveBeenCalled();
     expect(replace).toHaveBeenCalledWith("/login");
+    expect(await screen.findByText("Cerraste sesión. ¡Hasta pronto!")).toBeInTheDocument();
   });
 
   it("still lets the person leave when the API is down", async () => {
     const user = userEvent.setup();
     logout.mockRejectedValue(new Error("offline"));
-    render(<SignOutButton />);
+    render(
+      <ToastProvider>
+        <SignOutButton />
+      </ToastProvider>,
+    );
 
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 

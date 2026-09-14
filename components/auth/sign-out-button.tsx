@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, type ButtonProps } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { logout } from "@/lib/api/auth";
 import { cn } from "@/lib/cn";
 import { clearLocalSession } from "@/lib/session/storage";
@@ -22,6 +23,7 @@ export function SignOutButton({
   className,
 }: SignOutButtonProps) {
   const router = useRouter();
+  const { notify } = useToast();
   const [leaving, setLeaving] = useState(false);
 
   const signOut = async () => {
@@ -32,6 +34,7 @@ export function SignOutButton({
       // Clearing local state still lets the person leave even if the API is down.
     }
     clearLocalSession();
+    notify("Cerraste sesión. ¡Hasta pronto!", "success");
     router.replace("/login");
   };
 
@@ -47,7 +50,10 @@ export function SignOutButton({
       onClick={() => void signOut()}
       leadingIcon={
         <LogOut
-          className="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
+          className={cn(
+            "size-4 transition-transform duration-300",
+            leaving ? "translate-x-1.5 opacity-0" : "group-hover:translate-x-0.5",
+          )}
           aria-hidden="true"
         />
       }
