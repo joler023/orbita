@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { ScrollArea } from "./scroll-area";
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 
 export type TabItem<T extends string> = {
@@ -49,11 +50,8 @@ export function Tabs<T extends string>({ label, items, value, onChange, children
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div
-        role="tablist"
-        aria-label={label}
-        className="flex gap-1 overflow-x-auto border-b border-border pb-2"
-      >
+      <ScrollArea orientation="horizontal" className="border-b border-border pb-2">
+        <div role="tablist" aria-label={label} className="flex gap-1">
         {items.map((item, index) => {
           const selected = item.value === value;
           return (
@@ -79,7 +77,8 @@ export function Tabs<T extends string>({ label, items, value, onChange, children
             </button>
           );
         })}
-      </div>
+        </div>
+      </ScrollArea>
       <div
         role="tabpanel"
         id={`${baseId}-panel`}
