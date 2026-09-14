@@ -29,15 +29,19 @@ import {
 import { AgentInstructionsFields } from "./agent-instructions-fields";
 import { AgentToolsFields } from "./agent-tools-fields";
 import { KnowledgePanel } from "./knowledge-panel";
+import { TestBenchPanel } from "./test-bench-panel";
 
-type EditorTab = "instructions" | "tools" | "knowledge";
+type EditorTab = "instructions" | "tools" | "knowledge" | "tests";
 
 const BASE_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
   { value: "instructions", label: "Instrucciones" },
   { value: "tools", label: "Herramientas" },
 ];
 
-const KNOWLEDGE_TAB = { value: "knowledge", label: "Conocimiento" } as const;
+const SAVED_AGENT_TABS = [
+  { value: "knowledge", label: "Conocimiento" },
+  { value: "tests", label: "Pruebas" },
+] as const;
 
 type CatalogState = { status: "loading" } | { status: "ready"; tools: AiTool[] } | { status: "error" };
 
@@ -170,7 +174,7 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
   };
 
   // Knowledge lives on a saved agent, so a draft that has never been created cannot have it yet.
-  const tabs = creating ? BASE_TABS : [...BASE_TABS, KNOWLEDGE_TAB];
+  const tabs = creating ? BASE_TABS : [...BASE_TABS, ...SAVED_AGENT_TABS];
 
   let toolsPanel: ReactNode;
   if (catalog.status === "loading") {
@@ -202,6 +206,8 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     panel = toolsPanel;
   } else if (tab === "knowledge" && agent) {
     panel = <KnowledgePanel tenantId={tenantId} agentId={agent.id} />;
+  } else if (tab === "tests" && agent) {
+    panel = <TestBenchPanel tenantId={tenantId} agentId={agent.id} />;
   }
 
   const hasDraft = agent?.hasUnpublishedChanges ?? false;
