@@ -1,5 +1,5 @@
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
 import type { SessionUser } from "@/lib/session/storage";
 import { SidebarNav } from "./sidebar-nav";
 import { UserCard } from "./user-card";
@@ -9,7 +9,6 @@ export type SidebarPanelProps = {
   pathname: string;
   user: SessionUser | null;
   organizationName?: string;
-  onLogout: () => void;
   onNavigate?: () => void;
 };
 
@@ -18,7 +17,6 @@ export function SidebarPanel({
   pathname,
   user,
   organizationName,
-  onLogout,
   onNavigate,
 }: SidebarPanelProps) {
   return (
@@ -31,9 +29,7 @@ export function SidebarPanel({
       </div>
       <div className="flex shrink-0 flex-col gap-1 border-t border-sidebar-border px-3 py-3">
         <UserCard user={user} organizationName={organizationName} />
-        <Button variant="ghost" size="sm" onClick={onLogout}>
-          Cerrar sesión
-        </Button>
+        <SignOutButton className="w-full justify-start" />
       </div>
     </div>
   );

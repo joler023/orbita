@@ -1,14 +1,9 @@
 "use client";
 
-import { getTenant, logout } from "@/lib/api/auth";
+import { getTenant } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
-import {
-  clearLocalSession,
-  readSessionUser,
-  writeLastTenantId,
-  type SessionUser,
-} from "@/lib/session/storage";
-import { usePathname, useRouter } from "next/navigation";
+import { readSessionUser, writeLastTenantId, type SessionUser } from "@/lib/session/storage";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { SidebarPanel } from "./sidebar-panel";
 import { TopBar } from "./top-bar";
@@ -21,7 +16,6 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState<string | undefined>();
   const user = useMemo<SessionUser | null>(() => readSessionUser(), []);
@@ -61,15 +55,6 @@ export function AppShell({
           ? "Notificaciones"
           : "Órbita");
 
-  async function onLogout() {
-    try {
-      await logout();
-    } catch {
-      // Clearing local state still lets the person leave even if the API is down.
-    }
-    clearLocalSession();
-    router.replace("/login");
-  }
 
   return (
     <div className="min-h-full bg-background">
@@ -79,7 +64,6 @@ export function AppShell({
           pathname={pathname}
           user={user}
           organizationName={organizationName}
-          onLogout={() => void onLogout()}
         />
       </aside>
 
@@ -97,7 +81,6 @@ export function AppShell({
               pathname={pathname}
               user={user}
               organizationName={organizationName}
-              onLogout={() => void onLogout()}
               onNavigate={() => setMenuOpen(false)}
             />
           </aside>
