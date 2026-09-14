@@ -25,6 +25,7 @@ const TITLE_COPY: Record<string, string> = {
   "Unsupported document type": "Ese tipo de archivo no se puede subir. Usa PDF, DOCX, TXT o MD.",
   "Document too large": "El archivo pesa más de 25 MB. Divídelo o comprímelo antes de subirlo.",
   "Empty upload": "El archivo está vacío. Elige otro.",
+  "Model provider unavailable": "El asistente no pudo responder ahora mismo. Inténtalo de nuevo en un momento.",
   "Unexpected error": "Algo salió mal. Inténtalo de nuevo en un momento.",
 };
 
