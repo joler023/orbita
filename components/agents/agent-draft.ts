@@ -2,13 +2,14 @@ import {
   AGENT_INSTRUCTIONS_MAX_LENGTH,
   AGENT_NAME_MAX_LENGTH,
   AGENT_PERSONALITY_MAX_LENGTH,
+  DEFAULT_AGENT_STYLE,
   type SaveAiAgentRequest,
 } from "@/lib/api/ai-agents";
 
 export type AgentDraftErrors = Partial<Record<"name" | "personality" | "instructions", string>>;
 
 export function emptyAgentDraft(): SaveAiAgentRequest {
-  return { name: "", personality: "", instructions: "", tone: "Balanced", tools: [] };
+  return { name: "", personality: "", instructions: "", style: DEFAULT_AGENT_STYLE, tools: [] };
 }
 
 export function validateAgentDraft(draft: SaveAiAgentRequest): AgentDraftErrors {
@@ -45,7 +46,9 @@ export function isSameDraft(a: SaveAiAgentRequest, b: SaveAiAgentRequest): boole
     a.name === b.name &&
     a.personality === b.personality &&
     a.instructions === b.instructions &&
-    a.tone === b.tone &&
+    a.style.formality === b.style.formality &&
+    a.style.verbosity === b.style.verbosity &&
+    a.style.energy === b.style.energy &&
     a.tools.length === b.tools.length &&
     a.tools.every((tool) => b.tools.includes(tool))
   );

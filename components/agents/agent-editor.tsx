@@ -9,7 +9,7 @@ import {
   createAiAgent,
   listAiTools,
   toSaveRequest,
-  updateAiAgent,
+  saveAiAgentDraft,
   type AiAgent,
   type AiTool,
   type SaveAiAgentRequest,
@@ -107,7 +107,7 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     try {
       const saved = creating
         ? await createAiAgent(tenantId, request)
-        : await updateAiAgent(tenantId, agent.id, request);
+        : await saveAiAgentDraft(tenantId, agent.id, request);
       const savedDraft = toSaveRequest(saved);
       setBaseline(savedDraft);
       setDraft(savedDraft);

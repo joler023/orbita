@@ -6,7 +6,9 @@ import {
   listAiTools,
   setAiAgentEnabled,
   toSaveRequest,
-  updateAiAgent,
+  saveAiAgentDraft,
+  publishAiAgent,
+  discardAiAgentDraft,
   type AiAgent,
 } from "./ai-agents";
 import { resetRefreshLock } from "./client";
@@ -18,7 +20,9 @@ const agent: AiAgent = {
   name: "Aura",
   personality: "Cercana",
   instructions: "Nunca inventes precios.",
-  tone: "Balanced",
+  style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
+  hasUnpublishedChanges: false,
+  draft: null,
   tools: ["consultar_conocimiento"],
   isEnabled: true,
   conversationCount: 0,
@@ -60,14 +64,50 @@ describe("ai agents api", () => {
       name: "Aura",
       personality: "Cercana",
       instructions: "Nunca inventes precios.",
-      tone: "Balanced",
+      style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
       tools: ["consultar_conocimiento"],
     });
 
-    const updateMock = stubJson(agent);
-    await updateAiAgent(tenantId, "a1", toSaveRequest(agent));
-    expect(lastCall(updateMock)[0]).toBe(`http://localhost:5091/api/tenants/${tenantId}/ai-agents/a1`);
-    expect(lastCall(updateMock)[1].method).toBe("PATCH");
+    const saveMock = stubJson(agent);
+    await saveAiAgentDraft(tenantId, "a1", toSaveRequest(agent));
+    expect(lastCall(saveMock)[0]).toBe(`http://localhost:5091/api/tenants/${tenantId}/ai-agents/a1`);
+    expect(lastCall(saveMock)[1].method).toBe("PATCH");
+  });
+
+  it("publishes and discards the draft through their own routes", async () => {
+    const publishMock = stubJson({ ...agent, hasUnpublishedChanges: false });
+    await publishAiAgent(tenantId, "a1");
+    expect(lastCall(publishMock)[0]).toBe(`http://localhost:5091/api/tenants/${tenantId}/ai-agents/a1/publish`);
+    expect(lastCall(publishMock)[1].method).toBe("POST");
+
+    const discardMock = stubJson(agent);
+    await discardAiAgentDraft(tenantId, "a1");
+    expect(lastCall(discardMock)[0]).toBe(`http://localhost:5091/api/tenants/${tenantId}/ai-agents/a1/draft`);
+    expect(lastCall(discardMock)[1].method).toBe("DELETE");
+  });
+
+  it("binds the form to the draft when the agent has unpublished changes", () => {
+    const withDraft: AiAgent = {
+      ...agent,
+      hasUnpublishedChanges: true,
+      draft: {
+        name: "Aura nueva",
+        personality: "Más cercana",
+        instructions: "Nunca inventes precios.",
+        style: { formality: "Warm", verbosity: "Brief", energy: "Enthusiastic" },
+        tools: [],
+        updatedAt: "2026-09-14T10:00:00+00:00",
+      },
+    };
+
+    expect(toSaveRequest(withDraft)).toEqual({
+      name: "Aura nueva",
+      personality: "Más cercana",
+      instructions: "Nunca inventes precios.",
+      style: { formality: "Warm", verbosity: "Brief", energy: "Enthusiastic" },
+      tools: [],
+    });
+    expect(toSaveRequest(agent).name).toBe("Aura");
   });
 
   it("toggles through the enabled subresource", async () => {

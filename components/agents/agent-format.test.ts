@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatAgentsMeta, formatConversationCount, TONE_OPTIONS } from "./agent-format";
+import {
+  ENERGY_AXIS,
+  formatAgentsMeta,
+  formatConversationCount,
+  FORMALITY_AXIS,
+  VERBOSITY_AXIS,
+} from "./agent-format";
 
 describe("agent formatting", () => {
   it("pluralizes the 30-day conversation count", () => {
@@ -12,9 +18,19 @@ describe("agent formatting", () => {
     expect(formatAgentsMeta(1, 0)).toBe("1 asistente · 0 activos");
   });
 
-  it("offers the three tones without model jargon", () => {
-    const copy = TONE_OPTIONS.map((option) => `${option.title} ${option.description}`).join(" ");
-    expect(TONE_OPTIONS.map((option) => option.value)).toEqual(["Formal", "Balanced", "Conversational"]);
+  it("labels the three style axes as Figma does, without model jargon", () => {
+    const axes = [FORMALITY_AXIS, VERBOSITY_AXIS, ENERGY_AXIS];
+
+    expect(axes.map((axis) => `${axis.startLabel}–${axis.endLabel}`)).toEqual([
+      "Formal–Cercano",
+      "Breve–Detallado",
+      "Neutro–Entusiasta",
+    ]);
+    expect(FORMALITY_AXIS.levels).toEqual(["Formal", "Balanced", "Warm"]);
+    expect(VERBOSITY_AXIS.levels).toEqual(["Brief", "Balanced", "Detailed"]);
+    expect(ENERGY_AXIS.levels).toEqual(["Neutral", "Balanced", "Enthusiastic"]);
+
+    const copy = axes.flatMap((axis) => [axis.startLabel, axis.endLabel, ...axis.levelLabels]).join(" ");
     expect(copy).not.toMatch(/prompt|temperatura|modelo|tokens/i);
   });
 });

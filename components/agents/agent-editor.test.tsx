@@ -6,17 +6,17 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentEditor } from "./agent-editor";
 
-const { listAiTools, createAiAgent, updateAiAgent } = vi.hoisted(() => ({
+const { listAiTools, createAiAgent, saveAiAgentDraft } = vi.hoisted(() => ({
   listAiTools: vi.fn(),
   createAiAgent: vi.fn(),
-  updateAiAgent: vi.fn(),
+  saveAiAgentDraft: vi.fn(),
 }));
 
 vi.mock("@/lib/api/ai-agents", async () => ({
   ...(await vi.importActual<typeof import("@/lib/api/ai-agents")>("@/lib/api/ai-agents")),
   listAiTools: (...args: unknown[]) => listAiTools(...args),
   createAiAgent: (...args: unknown[]) => createAiAgent(...args),
-  updateAiAgent: (...args: unknown[]) => updateAiAgent(...args),
+  saveAiAgentDraft: (...args: unknown[]) => saveAiAgentDraft(...args),
 }));
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
@@ -26,7 +26,9 @@ const agent: AiAgent = {
   name: "Aura",
   personality: "Cercana",
   instructions: "Nunca inventes precios.",
-  tone: "Balanced",
+  style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
+  hasUnpublishedChanges: false,
+  draft: null,
   tools: [],
   isEnabled: false,
   conversationCount: 0,
@@ -64,13 +66,13 @@ describe("AgentEditor", () => {
   beforeEach(() => {
     listAiTools.mockReset().mockResolvedValue(tools);
     createAiAgent.mockReset();
-    updateAiAgent.mockReset();
+    saveAiAgentDraft.mockReset();
   });
 
   it("saves instructions and tools together as the full set", async () => {
     const user = userEvent.setup();
     const updated = { ...agent, name: "Aura 2", tools: ["consultar_conocimiento"] };
-    updateAiAgent.mockResolvedValue(updated);
+    saveAiAgentDraft.mockResolvedValue(updated);
     const { onSaved, onDirtyChange } = renderEditor();
 
     expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
@@ -82,11 +84,11 @@ describe("AgentEditor", () => {
     await user.click(await screen.findByRole("checkbox", { name: /Consultar los documentos/ }));
     await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
 
-    expect(updateAiAgent).toHaveBeenCalledWith(tenantId, "a1", {
+    expect(saveAiAgentDraft).toHaveBeenCalledWith(tenantId, "a1", {
       name: "Aura 2",
       personality: "Cercana",
       instructions: "Nunca inventes precios.",
-      tone: "Balanced",
+      style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
       tools: ["consultar_conocimiento"],
     });
     expect(onSaved).toHaveBeenCalledWith(updated);
@@ -136,7 +138,7 @@ describe("AgentEditor", () => {
 
   it("keeps the draft and explains the error when saving fails", async () => {
     const user = userEvent.setup();
-    updateAiAgent.mockRejectedValue(new ApiError(403, "Forbidden", "no"));
+    saveAiAgentDraft.mockRejectedValue(new ApiError(403, "Forbidden", "no"));
     renderEditor();
 
     await user.type(screen.getByLabelText("¿Cómo habla?"), " y breve");

@@ -1,21 +1,48 @@
 import { apiRequest } from "./client";
 
-export const AGENT_TONES = ["Formal", "Balanced", "Conversational"] as const;
+export const FORMALITY_LEVELS = ["Formal", "Balanced", "Warm"] as const;
+export const VERBOSITY_LEVELS = ["Brief", "Balanced", "Detailed"] as const;
+export const ENERGY_LEVELS = ["Neutral", "Balanced", "Enthusiastic"] as const;
 
-export type AgentTone = (typeof AGENT_TONES)[number];
+export type FormalityLevel = (typeof FORMALITY_LEVELS)[number];
+export type VerbosityLevel = (typeof VERBOSITY_LEVELS)[number];
+export type EnergyLevel = (typeof ENERGY_LEVELS)[number];
+
+export type AgentStyle = {
+  formality: FormalityLevel;
+  verbosity: VerbosityLevel;
+  energy: EnergyLevel;
+};
+
+export const DEFAULT_AGENT_STYLE: AgentStyle = {
+  formality: "Balanced",
+  verbosity: "Balanced",
+  energy: "Balanced",
+};
 
 export const AGENT_NAME_MAX_LENGTH = 120;
 export const AGENT_PERSONALITY_MAX_LENGTH = 2_000;
 export const AGENT_INSTRUCTIONS_MAX_LENGTH = 8_000;
+
+export type AiAgentDraft = {
+  name: string;
+  personality: string;
+  instructions: string;
+  style: AgentStyle;
+  tools: string[];
+  updatedAt: string;
+};
 
 export type AiAgent = {
   id: string;
   name: string;
   personality: string;
   instructions: string;
-  tone: AgentTone;
+  style: AgentStyle;
   tools: string[];
   isEnabled: boolean;
+  hasUnpublishedChanges: boolean;
+  draft: AiAgentDraft | null;
   conversationCount: number;
   createdAt: string;
 };
@@ -24,7 +51,7 @@ export type SaveAiAgentRequest = {
   name: string;
   personality: string;
   instructions: string;
-  tone: AgentTone;
+  style: AgentStyle;
   tools: string[];
 };
 
@@ -55,7 +82,8 @@ export function createAiAgent(tenantId: string, body: SaveAiAgentRequest): Promi
   });
 }
 
-export function updateAiAgent(
+/** Saves as an unpublished draft: the live assistant keeps answering with what it had. */
+export function saveAiAgentDraft(
   tenantId: string,
   agentId: string,
   body: SaveAiAgentRequest,
@@ -64,6 +92,14 @@ export function updateAiAgent(
     method: "PATCH",
     body: JSON.stringify(body),
   });
+}
+
+export function publishAiAgent(tenantId: string, agentId: string): Promise<AiAgent> {
+  return apiRequest<AiAgent>(`${agentsPath(tenantId)}/${agentId}/publish`, { method: "POST" });
+}
+
+export function discardAiAgentDraft(tenantId: string, agentId: string): Promise<AiAgent> {
+  return apiRequest<AiAgent>(`${agentsPath(tenantId)}/${agentId}/draft`, { method: "DELETE" });
 }
 
 export function setAiAgentEnabled(
@@ -85,12 +121,14 @@ export function listAiTools(): Promise<AiTool[]> {
   return apiRequest<AiTool[]>("/api/ai-tools");
 }
 
+/** What the form binds to: the owner's unpublished edits when there are any, else what is live. */
 export function toSaveRequest(agent: AiAgent): SaveAiAgentRequest {
+  const source = agent.draft ?? agent;
   return {
-    name: agent.name,
-    personality: agent.personality,
-    instructions: agent.instructions,
-    tone: agent.tone,
-    tools: agent.tools,
+    name: source.name,
+    personality: source.personality,
+    instructions: source.instructions,
+    style: source.style,
+    tools: source.tools,
   };
 }

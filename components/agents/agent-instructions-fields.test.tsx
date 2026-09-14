@@ -1,5 +1,5 @@
 import type { SaveAiAgentRequest } from "@/lib/api/ai-agents";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
@@ -25,20 +25,33 @@ function currentDraft(): SaveAiAgentRequest {
 }
 
 describe("AgentInstructionsFields", () => {
-  it("edits name, personality, instructions and tone", async () => {
+  it("edits name, personality and instructions", async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     await user.type(screen.getByLabelText("¿Cómo se llama tu asistente?"), "Aura");
     await user.type(screen.getByLabelText("¿Cómo habla?"), "Cercana");
     await user.type(screen.getByLabelText("¿Qué hace y qué nunca debe hacer?"), "Atiende pedidos");
-    await user.click(screen.getByRole("radio", { name: /Muy formal/ }));
 
     expect(currentDraft()).toMatchObject({
       name: "Aura",
       personality: "Cercana",
       instructions: "Atiende pedidos",
-      tone: "Formal",
+    });
+  });
+
+  it("moves each style axis on its own", () => {
+    render(<Harness />);
+
+    const [formality, verbosity, energy] = screen.getAllByRole("slider");
+    fireEvent.change(formality, { target: { value: "2" } });
+    fireEvent.change(verbosity, { target: { value: "0" } });
+    fireEvent.change(energy, { target: { value: "2" } });
+
+    expect(currentDraft().style).toEqual({
+      formality: "Warm",
+      verbosity: "Brief",
+      energy: "Enthusiastic",
     });
   });
 

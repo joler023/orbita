@@ -39,7 +39,7 @@ describe("agent draft", () => {
     const a = { ...emptyAgentDraft(), tools: ["x", "y"] };
     expect(isSameDraft(a, { ...a, tools: ["y", "x"] })).toBe(true);
     expect(isSameDraft(a, { ...a, tools: ["x"] })).toBe(false);
-    expect(isSameDraft(a, { ...a, tone: "Formal" })).toBe(false);
+    expect(isSameDraft(a, { ...a, style: { ...a.style, formality: "Formal" } })).toBe(false);
   });
 
   it("trims text before saving", () => {

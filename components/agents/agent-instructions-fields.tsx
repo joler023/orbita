@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { RadioCardGroup } from "@/components/ui/radio-card-group";
+import { LevelSlider } from "@/components/ui/level-slider";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AGENT_INSTRUCTIONS_MAX_LENGTH,
@@ -8,7 +8,7 @@ import {
   type SaveAiAgentRequest,
 } from "@/lib/api/ai-agents";
 import type { AgentDraftErrors } from "./agent-draft";
-import { TONE_OPTIONS } from "./agent-format";
+import { ENERGY_AXIS, FORMALITY_AXIS, VERBOSITY_AXIS } from "./agent-format";
 import { InstructionExamples } from "./instruction-examples";
 
 export type AgentInstructionsFieldsProps = {
@@ -52,13 +52,24 @@ export function AgentInstructionsFields({ draft, errors, onChange }: AgentInstru
         />
         <InstructionExamples onUse={(text) => onChange({ instructions: text })} />
       </div>
-      <RadioCardGroup
-        name="agent-tone"
-        legend="¿Qué tan creativo quieres que sea?"
-        options={TONE_OPTIONS}
-        value={draft.tone}
-        onChange={(tone) => onChange({ tone })}
-      />
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-1 text-sm font-medium text-foreground">¿Cómo suena cuando responde?</legend>
+        <LevelSlider
+          {...FORMALITY_AXIS}
+          value={draft.style.formality}
+          onChange={(formality) => onChange({ style: { ...draft.style, formality } })}
+        />
+        <LevelSlider
+          {...VERBOSITY_AXIS}
+          value={draft.style.verbosity}
+          onChange={(verbosity) => onChange({ style: { ...draft.style, verbosity } })}
+        />
+        <LevelSlider
+          {...ENERGY_AXIS}
+          value={draft.style.energy}
+          onChange={(energy) => onChange({ style: { ...draft.style, energy } })}
+        />
+      </fieldset>
     </div>
   );
 }
