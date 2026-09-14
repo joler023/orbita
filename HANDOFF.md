@@ -6,20 +6,21 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-09** — `ORB-D03` (búsqueda de contactos) en `feature/d03-busqueda`, apilada sobre `feature/figma-alignment`. El listado sigue siendo un borrador visual.
+**2026-09-14** — `ORB-D12` (sitio público) en `feature/d12-sitio-publico`, apilada sobre `feature/d03-busqueda`. Borrador sustituible.
 
 ## Qué está implementado
 
 - Paleta Órbita (50–900) en Tailwind 4 y componentes base: botón, campo, modal, tabla, toast, empty state, skeleton.
 - Shell autenticado según Figma: sidebar, top bar, card de usuario, drawer móvil.
-- Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline es un kanban real. Contactos tiene listado + ficha (campos custom, tratos ligados; historial de conversación vacío hasta Track B). El resto empty states. Stub de marketing en `/`.
+- Rutas `/t/[tenantId]/…` (Inicio con KPIs placeholder). Pipeline es un kanban real. Contactos tiene listado + ficha (campos custom, tratos ligados; historial de conversación vacío hasta Track B). El resto empty states.
+- Sitio público borrador (`ORB-D12`): `/`, `/producto`, `/precios` (simulador), `/comparativas`, `/blog`, `/contacto`. Sin Turnstile ni CMS.
 - Cliente HTTP con `credentials: "include"`, tipos generados desde [`openapi/orbita.json`](./openapi/orbita.json), refresh en 401 hacia `POST /api/auth/refresh`.
 - Login, registro (register → login), 2FA en dos pasos, recuperar contraseña. Copy de error en español.
 - Vitest + Playwright.
 
 ## Decisiones que ya se tomaron (no reabrir sin motivo)
 
-- Un solo app Next.js 16 con route groups `(marketing)` / `(auth)` / `(app)`. El sitio público completo es `ORB-D12`.
+- Un solo app Next.js 16 con route groups `(marketing)` / `(auth)` / `(app)`.
 - Tenant en la URL, no en el JWT. El token solo lleva `sub`.
 - Nadie escribe `fetch` en componentes: pasar por [`lib/api/client.ts`](./lib/api/client.ts).
 - Tras registro, el front hace login porque `POST /api/organizations` no setea cookies.
@@ -40,6 +41,6 @@ Mientras tanto, un usuario que entra en un dispositivo nuevo sin `lastTenantId` 
 2. `bun install && bun dev`.
 3. Regenerar tipos si cambia el contrato: levantar la API, `bun run refresh:openapi`, `bun run generate:api`. No editar `lib/api/generated/schema.d.ts` a mano.
 
-## Fuera de D05
+## Pendiente en Track D (depende de otros)
 
-Bandeja, crear oportunidad desde la conversación (D06), campañas, reportes, sitio marketing. Las pantallas siguen siendo roughs fáciles de reemplazar cuando llegue Figma.
+Exportación async/R2 (`ORB-D13` en curso o siguiente), D06–D11/D14 bloqueados por Tracks A/B/C.
