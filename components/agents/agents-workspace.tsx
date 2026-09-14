@@ -219,9 +219,9 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   const activeCount = agents.filter((agent) => agent.isEnabled).length;
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[240px_1fr]">
-      {/* The list keeps its place while the configuration beside it scrolls. */}
-      <div className="flex max-h-[calc(100dvh-7rem)] flex-col gap-3 overflow-y-auto lg:sticky lg:top-6">
+    <div className="grid min-h-0 items-start gap-4 lg:h-full lg:grid-cols-[240px_1fr] lg:items-stretch">
+      {/* Each column scrolls on its own, so the list stays put while the form moves. */}
+      <div className="flex min-h-0 flex-col gap-3 lg:overflow-y-auto lg:pr-1">
         <AgentList
           agents={agents}
           selectedId={selectedAgent?.id ?? null}
@@ -241,7 +241,7 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
           }
         />
       </div>
-      {detail}
+      <div className="flex min-h-0 min-w-0 flex-col lg:overflow-y-auto">{detail}</div>
       <ConfirmDialog
         open={pendingDelete !== null}
         title={`¿Eliminar a ${pendingDelete?.name ?? "este asistente"}?`}
