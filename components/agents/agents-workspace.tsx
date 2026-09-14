@@ -5,6 +5,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { PermissionState } from "@/components/ui/permission-state";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { deleteAiAgent, listAiAgents, setAiAgentEnabled, type AiAgent } from "@/lib/api/ai-agents";
@@ -221,7 +222,7 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   return (
     <div className="grid min-h-0 items-start gap-4 lg:h-full lg:grid-cols-[240px_1fr] lg:items-stretch">
       {/* Each column scrolls on its own, so the list stays put while the form moves. */}
-      <div className="flex min-h-0 flex-col gap-3 lg:overflow-y-auto lg:pr-1">
+      <ScrollArea className="flex flex-col gap-3 max-lg:overflow-visible lg:pr-1">
         <AgentList
           agents={agents}
           selectedId={selectedAgent?.id ?? null}
@@ -240,8 +241,8 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
             </Button>
           }
         />
-      </div>
-      <div className="flex min-h-0 min-w-0 flex-col lg:overflow-y-auto">{detail}</div>
+      </ScrollArea>
+      <ScrollArea className="flex min-w-0 flex-col max-lg:overflow-visible">{detail}</ScrollArea>
       <ConfirmDialog
         open={pendingDelete !== null}
         title={`¿Eliminar a ${pendingDelete?.name ?? "este asistente"}?`}
