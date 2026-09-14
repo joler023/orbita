@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { login } from "@/lib/api/auth";
 import { isTwoFactorRequired, toUserMessage } from "@/lib/api/errors";
 import { readLastTenantId, writeSessionUser } from "@/lib/session/storage";
@@ -60,9 +61,8 @@ export function LoginForm() {
         onChange={(event) => setEmail(event.target.value)}
         required
       />
-      <Input
+      <PasswordInput
         name="password"
-        type="password"
         autoComplete="current-password"
         label="Contraseña"
         value={password}

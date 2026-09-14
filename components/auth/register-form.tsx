@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { login, registerOrganization } from "@/lib/api/auth";
 import { toUserMessage } from "@/lib/api/errors";
 import { writeLastTenantId, writeSessionUser } from "@/lib/session/storage";
@@ -68,9 +69,8 @@ export function RegisterForm() {
         onChange={(event) => setEmail(event.target.value)}
         required
       />
-      <Input
+      <PasswordInput
         name="password"
-        type="password"
         autoComplete="new-password"
         label="Contraseña"
         hint="Mínimo 8 caracteres."
