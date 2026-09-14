@@ -25,10 +25,9 @@ describe("OpenOrganizationForm", () => {
     const user = userEvent.setup();
     render(<OpenOrganizationForm />);
 
-    await user.type(
-      screen.getByLabelText("¿Tienes el enlace de tu organización?"),
-      `http://localhost:3000/t/${tenantId}/agente`,
-    );
+    // People paste this link rather than typing it.
+    await user.click(screen.getByLabelText("¿Tienes el enlace de tu organización?"));
+    await user.paste(`http://localhost:3000/t/${tenantId}/agente`);
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(replace).toHaveBeenCalledWith(`/t/${tenantId}/inicio`);
