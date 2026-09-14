@@ -219,12 +219,13 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   const activeCount = agents.filter((agent) => agent.isEnabled).length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted">{formatAgentsMeta(agents.length, activeCount)}</p>
-      <div className="grid items-start gap-4 lg:grid-cols-[240px_1fr]">
+    <div className="grid items-start gap-4 lg:grid-cols-[240px_1fr]">
+      {/* The list keeps its place while the configuration beside it scrolls. */}
+      <div className="flex max-h-[calc(100dvh-7rem)] flex-col gap-3 overflow-y-auto lg:sticky lg:top-6">
         <AgentList
           agents={agents}
           selectedId={selectedAgent?.id ?? null}
+          meta={formatAgentsMeta(agents.length, activeCount)}
           onSelect={(id) => select({ kind: "agent", id })}
           footer={
             <Button
@@ -239,8 +240,8 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
             </Button>
           }
         />
-        {detail}
       </div>
+      {detail}
       <ConfirmDialog
         open={pendingDelete !== null}
         title={`¿Eliminar a ${pendingDelete?.name ?? "este asistente"}?`}

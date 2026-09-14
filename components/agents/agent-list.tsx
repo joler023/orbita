@@ -9,6 +9,8 @@ export type AgentListProps = {
   agents: ReadonlyArray<AiAgent>;
   selectedId: string | null;
   onSelect: (agentId: string) => void;
+  /** Shown next to the heading, e.g. "2 asistentes · 1 activo". */
+  meta?: string;
   footer?: ReactNode;
 };
 
@@ -20,10 +22,13 @@ export function AgentStatusBadge({ isEnabled }: { isEnabled: boolean }) {
   );
 }
 
-export function AgentList({ agents, selectedId, onSelect, footer }: AgentListProps) {
+export function AgentList({ agents, selectedId, onSelect, meta, footer }: AgentListProps) {
   return (
     <nav aria-label="Asistentes" className="flex flex-col gap-2">
-      <p className="px-1 text-[11px] font-semibold tracking-wider text-muted uppercase">Asistentes</p>
+      <p className="flex flex-wrap items-baseline justify-between gap-x-2 px-1 text-[11px] font-semibold tracking-wider text-muted uppercase">
+        Asistentes
+        {meta ? <span className="font-medium normal-case">{meta}</span> : null}
+      </p>
       <ul className="flex flex-col gap-2">
         {agents.map((agent) => {
           const selected = agent.id === selectedId;
