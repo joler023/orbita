@@ -1,4 +1,5 @@
 import { ToastProvider } from "@/components/ui/toast";
+import { CurrentUserProvider } from "@/lib/session/current-user";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "./app-shell";
@@ -15,6 +16,13 @@ vi.mock("@/lib/api/auth", () => ({
   logout: vi.fn(),
 }));
 
+const currentUser = {
+  userId: "u1",
+  email: "ana@orbita.test",
+  fullName: "Ana Pérez",
+  memberships: [{ tenantId: "tenant-1", slug: "panaderia", name: "Panadería", role: "Owner" as const }],
+};
+
 describe("AppShell", () => {
   beforeEach(() => {
     getTenant.mockReset().mockResolvedValue({ name: "Panadería Demo" });
@@ -23,9 +31,11 @@ describe("AppShell", () => {
   it("keeps the sidebar out of the scrolling content column", async () => {
     render(
       <ToastProvider>
-        <AppShell tenantId="tenant-1">
+        <CurrentUserProvider user={currentUser}>
+          <AppShell tenantId="tenant-1">
         <p>Contenido de la pantalla</p>
-        </AppShell>
+          </AppShell>
+        </CurrentUserProvider>
       </ToastProvider>,
     );
 
@@ -40,9 +50,11 @@ describe("AppShell", () => {
   it("remembers the organization so the next sign-in lands there", () => {
     render(
       <ToastProvider>
-        <AppShell tenantId="tenant-1">
+        <CurrentUserProvider user={currentUser}>
+          <AppShell tenantId="tenant-1">
         <p>Contenido</p>
-        </AppShell>
+          </AppShell>
+        </CurrentUserProvider>
       </ToastProvider>,
     );
 
@@ -52,9 +64,11 @@ describe("AppShell", () => {
   it("titles the page from the active navigation item", () => {
     render(
       <ToastProvider>
-        <AppShell tenantId="tenant-1">
+        <CurrentUserProvider user={currentUser}>
+          <AppShell tenantId="tenant-1">
         <p>Contenido</p>
-        </AppShell>
+          </AppShell>
+        </CurrentUserProvider>
       </ToastProvider>,
     );
 

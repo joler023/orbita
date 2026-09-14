@@ -12,7 +12,7 @@ describe("SidebarPanel", () => {
         <SidebarPanel
         tenantId="tenant-1"
         pathname="/t/tenant-1/agente"
-        user={{ userId: "u1", email: "ana@orbita.com", fullName: "Ana Pérez" }}
+        user={{ email: "ana@orbita.com", fullName: "Ana Pérez" }}
         organizationName="Panadería Demo"
         />
       </ToastProvider>,

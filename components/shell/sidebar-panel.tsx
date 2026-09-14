@@ -1,14 +1,14 @@
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Logo } from "@/components/brand/logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { SessionUser } from "@/lib/session/storage";
+import type { CurrentUser } from "@/lib/api/auth";
 import { SidebarNav } from "./sidebar-nav";
 import { UserCard } from "./user-card";
 
 export type SidebarPanelProps = {
   tenantId: string;
   pathname: string;
-  user: SessionUser | null;
+  user: Pick<CurrentUser, "email" | "fullName"> | null;
   organizationName?: string;
   onNavigate?: () => void;
 };

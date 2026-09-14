@@ -1,11 +1,11 @@
 import { initialsFromName } from "@/lib/navigation";
-import type { SessionUser } from "@/lib/session/storage";
+import type { CurrentUser } from "@/lib/api/auth";
 
 export function UserCard({
   user,
   organizationName,
 }: {
-  user: SessionUser | null;
+  user: Pick<CurrentUser, "email" | "fullName"> | null;
   organizationName?: string;
 }) {
   const name = user?.fullName ?? "Cuenta";

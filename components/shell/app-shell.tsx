@@ -4,9 +4,10 @@ import { ScreenTransition } from "@/components/ui/screen-transition";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getTenant } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
-import { readSessionUser, writeLastTenantId, type SessionUser } from "@/lib/session/storage";
+import { useCurrentUser } from "@/lib/session/current-user";
+import { writeLastTenantId } from "@/lib/session/storage";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SidebarPanel } from "./sidebar-panel";
 import { TopBar } from "./top-bar";
 
@@ -20,7 +21,7 @@ export function AppShell({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState<string | undefined>();
-  const user = useMemo<SessionUser | null>(() => readSessionUser(), []);
+  const user = useCurrentUser();
 
   // Until identity can list a user's organizations, the last one they were inside is how
   // the next sign-in knows where to land (see /sin-organizacion).
