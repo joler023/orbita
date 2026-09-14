@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { ScrollArea } from "./scroll-area";
 import type { ReactNode, TableHTMLAttributes } from "react";
 
 export type TableColumn = {
@@ -15,7 +16,12 @@ export type TableProps = TableHTMLAttributes<HTMLTableElement> & {
 
 export function Table({ columns, children, caption, className, ...props }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+    <ScrollArea
+      orientation="horizontal"
+      focusable
+      label={caption}
+      className="rounded-xl border border-border bg-surface"
+    >
       <table className={cn("w-full border-collapse text-left text-sm", className)} {...props}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead className="border-b border-border bg-orbita-50/60 text-muted">
@@ -29,6 +35,6 @@ export function Table({ columns, children, caption, className, ...props }: Table
         </thead>
         <tbody>{children}</tbody>
       </table>
-    </div>
+    </ScrollArea>
   );
 }

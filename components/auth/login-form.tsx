@@ -2,9 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { login } from "@/lib/api/auth";
+import { PasswordInput } from "@/components/ui/password-input";
+import { getCurrentUser, login } from "@/lib/api/auth";
 import { isTwoFactorRequired, toUserMessage } from "@/lib/api/errors";
-import { readLastTenantId, writeSessionUser } from "@/lib/session/storage";
+import { landingTenantId } from "@/lib/session/current-user";
+import { readLastTenantId } from "@/lib/session/storage";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -24,18 +26,18 @@ export function LoginForm() {
     setPending(true);
     setError(null);
     try {
-      const user = await login({
+      await login({
         email,
         password,
         twoFactorCode: needsTwoFactor ? twoFactorCode : null,
       });
-      writeSessionUser(user);
       const next = searchParams.get("next");
-      const tenantId = readLastTenantId();
       if (next?.startsWith("/t/")) {
         router.replace(next);
         return;
       }
+      // Login says whether there is a session; /me says where that session can work.
+      const tenantId = landingTenantId(await getCurrentUser(), readLastTenantId());
       router.replace(tenantId ? `/t/${tenantId}/inicio` : "/sin-organizacion");
     } catch (cause) {
       if (isTwoFactorRequired(cause)) {
@@ -60,9 +62,8 @@ export function LoginForm() {
         onChange={(event) => setEmail(event.target.value)}
         required
       />
-      <Input
+      <PasswordInput
         name="password"
-        type="password"
         autoComplete="current-password"
         label="Contraseña"
         value={password}

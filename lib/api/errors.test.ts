@@ -11,6 +11,15 @@ describe("toUserMessage", () => {
     );
   });
 
+  it("explains ai agent and knowledge errors with what to do next", () => {
+    expect(toUserMessage(new ApiError(409, "Cannot delete last agent", "no"))).toBe(
+      "No puedes eliminar tu único asistente. Pausa el asistente si no quieres que responda.",
+    );
+    expect(toUserMessage(new ApiError(413, "Document too large", "no"))).toBe(
+      "El archivo pesa más de 25 MB. Divídelo o comprímelo antes de subirlo.",
+    );
+  });
+
   it("detects the two-factor challenge", () => {
     expect(isTwoFactorRequired(new ApiError(401, "Two-factor code required", "need code"))).toBe(
       true,

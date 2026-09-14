@@ -1,15 +1,15 @@
 "use client";
 
-import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
-import { getTenant, logout } from "@/lib/api/auth";
+import { ScreenTransition } from "@/components/ui/screen-transition";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { getTenant } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
-import { clearLocalSession, readSessionUser, type SessionUser } from "@/lib/session/storage";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { SidebarNav } from "./sidebar-nav";
+import { useCurrentUser } from "@/lib/session/current-user";
+import { writeLastTenantId } from "@/lib/session/storage";
+import { usePathname } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
+import { SidebarPanel } from "./sidebar-panel";
 import { TopBar } from "./top-bar";
-import { UserCard } from "./user-card";
 
 export function AppShell({
   tenantId,
@@ -19,10 +19,15 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState<string | undefined>();
-  const user = useMemo<SessionUser | null>(() => readSessionUser(), []);
+  const user = useCurrentUser();
+
+  // Until identity can list a user's organizations, the last one they were inside is how
+  // the next sign-in knows where to land (see /sin-organizacion).
+  useEffect(() => {
+    writeLastTenantId(tenantId);
+  }, [tenantId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,27 +58,18 @@ export function AppShell({
           ? "Notificaciones"
           : "Órbita");
 
-  async function onLogout() {
-    try {
-      await logout();
-    } catch {
-      // Clearing local state still lets the person leave even if the API is down.
-    }
-    clearLocalSession();
-    router.replace("/login");
-  }
 
   return (
-    <div className="flex min-h-full bg-background">
-      <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r border-border bg-surface p-4 lg:flex">
-        <Logo href={`/t/${tenantId}/inicio`} />
-        <SidebarNav tenantId={tenantId} pathname={pathname} />
-        <div className="mt-auto flex flex-col gap-2">
-          <UserCard user={user} organizationName={organizationName} />
-          <Button variant="ghost" size="sm" onClick={() => void onLogout()}>
-            Cerrar sesión
-          </Button>
-        </div>
+    // On a wide screen the frame fills the viewport and the content scrolls inside it, so
+    // the sidebar and the header never slide away. Small screens keep the page scroll.
+    <div className="min-h-full bg-background lg:h-dvh lg:overflow-hidden">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-sidebar-border lg:block">
+        <SidebarPanel
+          tenantId={tenantId}
+          pathname={pathname}
+          user={user}
+          organizationName={organizationName}
+        />
       </aside>
 
       {menuOpen ? (
@@ -84,22 +80,25 @@ export function AppShell({
             aria-label="Cerrar menú"
             onClick={() => setMenuOpen(false)}
           />
-          <aside className="relative z-50 flex h-full w-72 flex-col gap-6 bg-surface p-4 shadow-xl">
-            <Logo href={`/t/${tenantId}/inicio`} />
-            <SidebarNav tenantId={tenantId} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
-            <div className="mt-auto flex flex-col gap-2">
-              <UserCard user={user} organizationName={organizationName} />
-              <Button variant="ghost" size="sm" onClick={() => void onLogout()}>
-                Cerrar sesión
-              </Button>
-            </div>
+          <aside className="relative z-50 h-full w-72 shadow-xl">
+            <SidebarPanel
+              tenantId={tenantId}
+              pathname={pathname}
+              user={user}
+              organizationName={organizationName}
+              onNavigate={() => setMenuOpen(false)}
+            />
           </aside>
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 lg:p-6">
+      <div className="flex min-w-0 flex-col gap-6 p-4 lg:ml-60 lg:h-dvh lg:p-6">
         <TopBar title={title} onOpenMenu={() => setMenuOpen(true)} />
-        <main className="min-h-0 flex-1">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col">
+          <ScrollArea className="flex-1 max-lg:overflow-visible">
+            <ScreenTransition className="flex min-h-full flex-col">{children}</ScreenTransition>
+          </ScrollArea>
+        </main>
       </div>
     </div>
   );

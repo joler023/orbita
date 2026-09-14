@@ -2,6 +2,7 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/api/auth";
+import { landingTenantId } from "@/lib/session/current-user";
 import { readLastTenantId } from "@/lib/session/storage";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -14,11 +15,11 @@ export function GuestOnly({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     getCurrentUser()
-      .then(() => {
+      .then((user) => {
         if (cancelled) {
           return;
         }
-        const tenantId = readLastTenantId();
+        const tenantId = landingTenantId(user, readLastTenantId());
         router.replace(tenantId ? `/t/${tenantId}/inicio` : "/sin-organizacion");
       })
       .catch(() => {

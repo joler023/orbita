@@ -4,7 +4,13 @@ Frontend de **Órbita**: un CRM conversacional multi-tenant con agentes de IA so
 
 ## Estado actual
 
-`ORB-D01` está en curso: hay sistema de diseño, shell autenticado, cliente HTTP con cookies y pantallas de login/registro. La bandeja, el CRM y el sitio público completo todavía no existen — Inicio muestra KPIs vacíos y el resto del menú son estados vacíos.
+`ORB-D01` dejó el sistema de diseño, el shell autenticado, el cliente HTTP con cookies y login/registro.
+
+Sobre eso está **Track C (agentes de IA)**: `ORB-C10` completo y `ORB-C11` a falta de créditos del proveedor de modelos. La pantalla `/t/[tenantId]/agente` crea y configura asistentes, gestiona sus documentos y los prueba, contra la API real. Al iniciar sesión se entra directo a tu organización, porque `GET /api/auth/me` ya devuelve las membresías.
+
+Todavía no existen la bandeja, el CRM ni el sitio público completo: Inicio muestra KPIs vacíos y el resto del menú son estados vacíos.
+
+Nada de Track C está mergeado: son 11 ramas apiladas sobre `develop`. La tabla del PR stack, lo que falta y el estado del backend están en [`HANDOFF.md`](./HANDOFF.md).
 
 El backend vive en [`orbita-api`](https://github.com/joler023/orbita-api). Este dashboard llama a `api` directo (sin BFF), con `credentials: "include"`.
 
@@ -42,9 +48,9 @@ bun run refresh:openapi  # baja el OpenAPI de una API en marcha
 
 ## Convenciones
 
-Ver [`CLAUDE.md`](./CLAUDE.md). Commits sin coautoría de IA. Una feature por rama `feature/<nombre>` desde `develop`.
+Ver [`CLAUDE.md`](./CLAUDE.md). Commits sin coautoría de IA. Cada historia en su rama `feature/<nombre>`; cuando son varias seguidas se apilan (cada una sale de la anterior y su PR va contra la anterior), como está hoy en el PR stack de Track C.
 
-Ver [`HANDOFF.md`](./HANDOFF.md) para el estado de trabajo y el contrato pendiente con identidad (listar membresías).
+Ver [`HANDOFF.md`](./HANDOFF.md) para el estado de trabajo, el PR stack y los acuerdos con el backend.
 
 ## Repos relacionados
 

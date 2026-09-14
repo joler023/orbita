@@ -54,6 +54,95 @@ describe("apiRequest", () => {
     ]);
   });
 
+  it("still times out when the caller passes its own signal", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = apiRequest("/api/slow", { signal: new AbortController().signal });
+    const assertion = expect(request).rejects.toMatchObject({ status: 0, detail: "timeout" });
+    await vi.advanceTimersByTimeAsync(4_000);
+
+    await assertion;
+    vi.useRealTimers();
+  });
+
+  it("aborts when the caller's signal aborts", async () => {
+    const fetchMock = vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = new AbortController();
+
+    const request = apiRequest("/api/slow", { signal: caller.signal });
+    caller.abort();
+
+    await expect(request).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("honors a custom timeout", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          const timer = setTimeout(() => resolve(new Response(null, { status: 204 })), 10_000);
+          init.signal?.addEventListener("abort", () => {
+            clearTimeout(timer);
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = apiRequest<void>("/api/upload", { method: "POST" }, { timeoutMs: 60_000 });
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expect(request).resolves.toBeUndefined();
+    vi.useRealTimers();
+  });
+
+  it("lets the browser set the multipart content type for form data", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const body = new FormData();
+    body.append("file", new Blob(["hola"]), "horarios.txt");
+
+    await apiRequest<void>("/api/upload", { method: "POST", body });
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(init.headers).not.toHaveProperty("Content-Type");
+    expect(init.body).toBe(body);
+  });
+
+  it("returns the body of an accepted response", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ id: "d1", status: "Pending" }), { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const document = await apiRequest<{ status: string }>("/api/upload", { method: "POST" });
+
+    expect(document.status).toBe("Pending");
+  });
+
+  it("returns undefined for an accepted response without body", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 202 })));
+
+    await expect(apiRequest<void>("/api/auth/forgot-password", { method: "POST" })).resolves.toBeUndefined();
+  });
+
   it("does not refresh a failed login", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ title: "Invalid credentials", detail: "no" }), {

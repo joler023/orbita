@@ -19,6 +19,13 @@ const TITLE_COPY: Record<string, string> = {
   "Invalid refresh token": "Tu sesión expiró. Vuelve a entrar.",
   "Invalid password reset": "El enlace para cambiar la contraseña ya no sirve. Pide uno nuevo.",
   Forbidden: "No tienes permiso para esta acción.",
+  "AI agent not found": "Ese asistente ya no existe. Puede que alguien lo haya eliminado.",
+  "Cannot delete last agent": "No puedes eliminar tu único asistente. Pausa el asistente si no quieres que responda.",
+  "Knowledge document not found": "Ese documento ya no existe. Recarga la lista.",
+  "Unsupported document type": "Ese tipo de archivo no se puede subir. Usa PDF, DOCX, TXT o MD.",
+  "Document too large": "El archivo pesa más de 25 MB. Divídelo o comprímelo antes de subirlo.",
+  "Empty upload": "El archivo está vacío. Elige otro.",
+  "Model provider unavailable": "El asistente no pudo responder ahora mismo. Inténtalo de nuevo en un momento.",
   "Unexpected error": "Algo salió mal. Inténtalo de nuevo en un momento.",
 };
 
