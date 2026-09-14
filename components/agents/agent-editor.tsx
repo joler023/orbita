@@ -7,9 +7,11 @@ import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import {
   createAiAgent,
+  discardAiAgentDraft,
   listAiTools,
-  toSaveRequest,
+  publishAiAgent,
   saveAiAgentDraft,
+  toSaveRequest,
   type AiAgent,
   type AiTool,
   type SaveAiAgentRequest,
@@ -95,12 +97,19 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     });
   };
 
-  const save = async () => {
+  const applySaved = (saved: AiAgent) => {
+    const savedDraft = toSaveRequest(saved);
+    setBaseline(savedDraft);
+    setDraft(savedDraft);
+    onSaved(saved);
+  };
+
+  const save = async (): Promise<AiAgent | null> => {
     const validation = validateAgentDraft(draft);
     if (hasDraftErrors(validation)) {
       setErrors(validation);
       setTab("instructions");
-      return;
+      return null;
     }
     const request = normalizeDraft(draft);
     setSaving(true);
@@ -108,11 +117,51 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
       const saved = creating
         ? await createAiAgent(tenantId, request)
         : await saveAiAgentDraft(tenantId, agent.id, request);
-      const savedDraft = toSaveRequest(saved);
-      setBaseline(savedDraft);
-      setDraft(savedDraft);
-      notify(creating ? `Creaste a ${saved.name}. Queda en pausa hasta que lo actives.` : "Guardamos los cambios.", "success");
-      onSaved(saved);
+      applySaved(saved);
+      notify(
+        creating
+          ? `Creaste a ${saved.name}. Queda en pausa hasta que lo actives.`
+          : "Guardamos tus cambios. Tus clientes siguen viendo la versión publicada.",
+        "success",
+      );
+      return saved;
+    } catch (error) {
+      notify(toUserMessage(error), "error");
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publish = async () => {
+    if (!agent) {
+      return;
+    }
+    // Publishing an edit nobody saved yet would silently drop it, so save first.
+    if (dirty && !(await save())) {
+      return;
+    }
+    setSaving(true);
+    try {
+      applySaved(await publishAiAgent(tenantId, agent.id));
+      notify("Publicamos los cambios. Tus clientes ya ven esta versión.", "success");
+    } catch (error) {
+      notify(toUserMessage(error), "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const discard = async () => {
+    setErrors({});
+    if (!agent?.hasUnpublishedChanges) {
+      setDraft(baseline);
+      return;
+    }
+    setSaving(true);
+    try {
+      applySaved(await discardAiAgentDraft(tenantId, agent.id));
+      notify("Descartamos los cambios sin publicar.", "success");
     } catch (error) {
       notify(toUserMessage(error), "error");
     } finally {
@@ -155,11 +204,20 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
     panel = <KnowledgePanel tenantId={tenantId} agentId={agent.id} />;
   }
 
-  let submitLabel = "Guardar cambios";
+  const hasDraft = agent?.hasUnpublishedChanges ?? false;
+
+  let submitLabel = "Guardar";
   if (saving) {
     submitLabel = "Guardando…";
   } else if (creating) {
     submitLabel = "Crear asistente";
+  }
+
+  let pendingNote: string | null = null;
+  if (!creating && dirty) {
+    pendingNote = "Tienes cambios sin guardar.";
+  } else if (hasDraft) {
+    pendingNote = "Guardado sin publicar: tus clientes siguen viendo la versión anterior.";
   }
 
   return (
@@ -168,28 +226,30 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
         {panel}
       </Tabs>
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
-        {dirty && !creating ? <p className="mr-auto text-xs text-muted">Tienes cambios sin guardar.</p> : null}
+        {pendingNote ? <p className="mr-auto text-xs text-muted">{pendingNote}</p> : null}
         {creating && onCancelCreate ? (
           <Button variant="secondary" size="sm" onClick={onCancelCreate} disabled={saving}>
             Cancelar
           </Button>
         ) : null}
-        {dirty && !creating ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={saving}
-            onClick={() => {
-              setDraft(baseline);
-              setErrors({});
-            }}
-          >
-            Descartar
+        {!creating && (dirty || hasDraft) ? (
+          <Button variant="secondary" size="sm" disabled={saving} onClick={() => void discard()}>
+            Descartar cambios
           </Button>
         ) : null}
-        <Button size="sm" onClick={() => void save()} disabled={saving || (!dirty && !creating)}>
+        <Button
+          variant={creating ? "primary" : "secondary"}
+          size="sm"
+          onClick={() => void save()}
+          disabled={saving || (!dirty && !creating)}
+        >
           {submitLabel}
         </Button>
+        {!creating ? (
+          <Button size="sm" onClick={() => void publish()} disabled={saving || (!dirty && !hasDraft)}>
+            Publicar
+          </Button>
+        ) : null}
       </div>
     </div>
   );

@@ -6,10 +6,12 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentEditor } from "./agent-editor";
 
-const { listAiTools, createAiAgent, saveAiAgentDraft } = vi.hoisted(() => ({
+const { listAiTools, createAiAgent, saveAiAgentDraft, publishAiAgent, discardAiAgentDraft } = vi.hoisted(() => ({
   listAiTools: vi.fn(),
   createAiAgent: vi.fn(),
   saveAiAgentDraft: vi.fn(),
+  publishAiAgent: vi.fn(),
+  discardAiAgentDraft: vi.fn(),
 }));
 
 vi.mock("@/lib/api/ai-agents", async () => ({
@@ -17,6 +19,8 @@ vi.mock("@/lib/api/ai-agents", async () => ({
   listAiTools: (...args: unknown[]) => listAiTools(...args),
   createAiAgent: (...args: unknown[]) => createAiAgent(...args),
   saveAiAgentDraft: (...args: unknown[]) => saveAiAgentDraft(...args),
+  publishAiAgent: (...args: unknown[]) => publishAiAgent(...args),
+  discardAiAgentDraft: (...args: unknown[]) => discardAiAgentDraft(...args),
 }));
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
@@ -67,6 +71,79 @@ describe("AgentEditor", () => {
     listAiTools.mockReset().mockResolvedValue(tools);
     createAiAgent.mockReset();
     saveAiAgentDraft.mockReset();
+    publishAiAgent.mockReset();
+    discardAiAgentDraft.mockReset();
+  });
+
+  it("saving leaves the change unpublished and says so", async () => {
+    const user = userEvent.setup();
+    const withDraft: AiAgent = {
+      ...agent,
+      hasUnpublishedChanges: true,
+      draft: {
+        name: "Aura 2",
+        personality: "Cercana",
+        instructions: "Nunca inventes precios.",
+        style: agent.style,
+        tools: [],
+        updatedAt: "2026-09-14T10:00:00+00:00",
+      },
+    };
+    saveAiAgentDraft.mockResolvedValue(withDraft);
+    renderEditor();
+
+    await user.type(screen.getByLabelText("¿Cómo se llama tu asistente?"), " 2");
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    expect(
+      await screen.findByText("Guardamos tus cambios. Tus clientes siguen viendo la versión publicada."),
+    ).toBeInTheDocument();
+  });
+
+  it("publishes an already saved draft", async () => {
+    const user = userEvent.setup();
+    publishAiAgent.mockResolvedValue({ ...agent, hasUnpublishedChanges: false });
+    const { onSaved } = renderEditor({ agent: { ...agent, hasUnpublishedChanges: true } });
+
+    expect(
+      screen.getByText("Guardado sin publicar: tus clientes siguen viendo la versión anterior."),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Publicar" }));
+
+    expect(saveAiAgentDraft).not.toHaveBeenCalled();
+    expect(publishAiAgent).toHaveBeenCalledWith(tenantId, "a1");
+    expect(onSaved).toHaveBeenCalled();
+    expect(await screen.findByText("Publicamos los cambios. Tus clientes ya ven esta versión.")).toBeInTheDocument();
+  });
+
+  it("saves before publishing when there are unsaved edits", async () => {
+    const user = userEvent.setup();
+    saveAiAgentDraft.mockResolvedValue({ ...agent, hasUnpublishedChanges: true });
+    publishAiAgent.mockResolvedValue({ ...agent, hasUnpublishedChanges: false });
+    renderEditor();
+
+    await user.type(screen.getByLabelText("¿Cómo habla?"), " y breve");
+    await user.click(screen.getByRole("button", { name: "Publicar" }));
+
+    expect(saveAiAgentDraft).toHaveBeenCalled();
+    expect(publishAiAgent).toHaveBeenCalledWith(tenantId, "a1");
+  });
+
+  it("discards a saved draft on the server", async () => {
+    const user = userEvent.setup();
+    discardAiAgentDraft.mockResolvedValue(agent);
+    renderEditor({ agent: { ...agent, hasUnpublishedChanges: true } });
+
+    await user.click(screen.getByRole("button", { name: "Descartar cambios" }));
+
+    expect(discardAiAgentDraft).toHaveBeenCalledWith(tenantId, "a1");
+    expect(await screen.findByText("Descartamos los cambios sin publicar.")).toBeInTheDocument();
+  });
+
+  it("cannot publish an agent with nothing pending", () => {
+    renderEditor();
+
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled();
   });
 
   it("saves instructions and tools together as the full set", async () => {
@@ -75,14 +152,14 @@ describe("AgentEditor", () => {
     saveAiAgentDraft.mockResolvedValue(updated);
     const { onSaved, onDirtyChange } = renderEditor();
 
-    expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeDisabled();
     await user.type(screen.getByLabelText("¿Cómo se llama tu asistente?"), " 2");
     expect(onDirtyChange).toHaveBeenLastCalledWith(true);
     expect(screen.getByText("Tienes cambios sin guardar.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Herramientas" }));
     await user.click(await screen.findByRole("checkbox", { name: /Consultar los documentos/ }));
-    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
 
     expect(saveAiAgentDraft).toHaveBeenCalledWith(tenantId, "a1", {
       name: "Aura 2",
@@ -92,7 +169,9 @@ describe("AgentEditor", () => {
       tools: ["consultar_conocimiento"],
     });
     expect(onSaved).toHaveBeenCalledWith(updated);
-    expect(await screen.findByText("Guardamos los cambios.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Guardamos tus cambios. Tus clientes siguen viendo la versión publicada."),
+    ).toBeInTheDocument();
     expect(onDirtyChange).toHaveBeenLastCalledWith(false);
   });
 
@@ -103,7 +182,7 @@ describe("AgentEditor", () => {
     const name = screen.getByLabelText("¿Cómo se llama tu asistente?");
     await user.clear(name);
     await user.type(name, "Otra");
-    await user.click(screen.getByRole("button", { name: "Descartar" }));
+    await user.click(screen.getByRole("button", { name: "Descartar cambios" }));
 
     expect(name).toHaveValue("Aura");
   });
@@ -142,7 +221,7 @@ describe("AgentEditor", () => {
     renderEditor();
 
     await user.type(screen.getByLabelText("¿Cómo habla?"), " y breve");
-    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
 
     expect(await screen.findByText("No tienes permiso para esta acción.")).toBeInTheDocument();
     expect(screen.getByLabelText("¿Cómo habla?")).toHaveValue("Cercana y breve");

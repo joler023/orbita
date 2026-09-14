@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import type { AiAgent } from "@/lib/api/ai-agents";
-import { Trash2 } from "lucide-react";
+import { PencilLine, Trash2 } from "lucide-react";
 import { AgentStatusBadge } from "./agent-list";
 
 export type AgentHeaderProps = {
@@ -17,6 +18,9 @@ export function AgentHeader({ agent, toggling, onToggle, onDelete }: AgentHeader
       <div className="flex min-w-0 items-center gap-2">
         <h2 className="truncate text-lg font-semibold text-foreground">{agent.name}</h2>
         <AgentStatusBadge isEnabled={agent.isEnabled} />
+        {agent.hasUnpublishedChanges ? (
+          <StatusBadge tone="warning" label="Sin publicar" icon={<PencilLine className="size-3.5" />} />
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <Switch
