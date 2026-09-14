@@ -2,7 +2,12 @@
 
 import { getTenant, logout } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
-import { clearLocalSession, readSessionUser, type SessionUser } from "@/lib/session/storage";
+import {
+  clearLocalSession,
+  readSessionUser,
+  writeLastTenantId,
+  type SessionUser,
+} from "@/lib/session/storage";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { SidebarPanel } from "./sidebar-panel";
@@ -20,6 +25,12 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState<string | undefined>();
   const user = useMemo<SessionUser | null>(() => readSessionUser(), []);
+
+  // Until identity can list a user's organizations, the last one they were inside is how
+  // the next sign-in knows where to land (see /sin-organizacion).
+  useEffect(() => {
+    writeLastTenantId(tenantId);
+  }, [tenantId]);
 
   useEffect(() => {
     let cancelled = false;

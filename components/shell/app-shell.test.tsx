@@ -34,6 +34,16 @@ describe("AppShell", () => {
     expect(await screen.findByText("Panadería Demo")).toBeInTheDocument();
   });
 
+  it("remembers the organization so the next sign-in lands there", () => {
+    render(
+      <AppShell tenantId="tenant-1">
+        <p>Contenido</p>
+      </AppShell>,
+    );
+
+    expect(window.localStorage.getItem("orbita.lastTenantId")).toBe("tenant-1");
+  });
+
   it("titles the page from the active navigation item", () => {
     render(
       <AppShell tenantId="tenant-1">
