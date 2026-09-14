@@ -32,8 +32,35 @@ export function logout(): Promise<void> {
   return apiRequest<void>("/api/auth/logout", { method: "POST" }, { retry: false });
 }
 
-export function getCurrentUser(): Promise<CurrentUserIdResponse> {
-  return apiRequest<CurrentUserIdResponse>("/api/auth/me");
+export const MEMBER_ROLES = ["Owner", "Admin", "Agent", "Viewer"] as const;
+
+export type MemberRole = (typeof MEMBER_ROLES)[number];
+
+export type Membership = {
+  tenantId: string;
+  slug: string;
+  name: string;
+  role: MemberRole;
+};
+
+/**
+ * Who is signed in and where they can work. Only accepted, active memberships come back,
+ * already sorted by name, so an empty list means "no organization yet" rather than an error.
+ */
+export type CurrentUser = {
+  userId: string;
+  email: string;
+  fullName: string;
+  memberships: Membership[];
+};
+
+export function getCurrentUser(): Promise<CurrentUser> {
+  return apiRequest<CurrentUser>("/api/auth/me");
+}
+
+/** Roles that may configure the assistants (ORB-A08's ManageAiAgents). */
+export function canManageAiAgents(role: MemberRole): boolean {
+  return role === "Owner" || role === "Admin";
 }
 
 export function requestPasswordReset(email: string): Promise<void> {
