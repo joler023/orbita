@@ -14,6 +14,12 @@ describe("Button", () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
+  it("looks clickable", () => {
+    render(<Button>Guardar</Button>);
+
+    expect(screen.getByRole("button", { name: "Guardar" })).toHaveClass("cursor-pointer");
+  });
+
   it("does not call onClick when disabled", async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
