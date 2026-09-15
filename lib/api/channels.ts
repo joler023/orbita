@@ -1,17 +1,18 @@
 import { apiRequest } from "./client";
 
-export type ChannelKind = "WhatsApp" | "Instagram";
+export type ChannelKind = "WhatsApp" | "Instagram" | "TikTok";
 export type ChannelStatus = "PendingVerification" | "Connected" | "TokenExpired" | "Disconnected";
 
 export type ChannelAccount = {
   id: string;
   kind: ChannelKind;
-  displayName: string;
   externalId: string;
+  displayName: string;
+  phoneE164: string | null;
   status: ChannelStatus;
+  connectedAt: string | null;
   tokenExpiresAt: string | null;
   expiresSoon: boolean;
-  createdAt: string;
 };
 
 export type ConnectWhatsAppRequest = {

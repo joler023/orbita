@@ -141,7 +141,9 @@ export function ChannelsPanel({ tenantId, viewerRole }: { tenantId: string; view
             >
               <div>
                 <p className="font-medium text-foreground">{channel.displayName}</p>
-                <p className="text-xs text-muted">{channel.kind === "WhatsApp" ? "WhatsApp" : "Instagram"} · {channel.externalId}</p>
+                <p className="text-xs text-muted">
+                  {channel.kind} · {channel.phoneE164 ?? channel.externalId}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 {channel.expiresSoon ? <StatusBadge tone="warning" label="Vence pronto" /> : null}
