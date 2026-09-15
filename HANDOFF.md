@@ -6,7 +6,11 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-14** — Track C (agentes de IA) en el frontend: `ORB-C10` completo y `ORB-C11` a falta de créditos del proveedor. Sin mergear: son 11 ramas apiladas sobre `develop` (ver [PR stack](#pr-stack)).
+**2026-09-14** — Corrección: las 11 ramas de Track C (agentes de IA) **ya están mergeadas en `develop`** (PR #8 a #18, en el orden de la tabla de abajo) — la nota anterior decía "sin mergear" y ya no es cierta. `ORB-C10` completo, `ORB-C11` a falta de créditos del proveedor (ver `HANDOFF.md` del backend).
+
+Además, en `orbita-api` (backend) hay una rama de Track D (`feature/d01-dashboard-shell` ya mergeada; `d02-contactos`, `d03-busqueda`, `d04-pipelines`, `d05-oportunidades`, `d12-sitio-publico`, `d13-exportacion`, `figma-alignment` **todavía no**) — contactos, búsqueda, pipelines, oportunidades, exportación y sitio público. Nadie de este repo la está tomando todavía; queda para quien retome Track D.
+
+Este repo ahora también avanza **Track A** (equipo, facturación, perfil — pantallas 3.8/3.10/3.11 de la guía de diseño) y **Track B** (canales y bandeja — pantallas 1.7–1.10, 3.7 de la guía), porque el desarrollador de Track B en el backend dejó el proyecto. El backend de Track B (`ORB-B01`–`ORB-B08`) se está integrando a `develop` de `orbita-api` en paralelo; hasta que eso aterrice, las pantallas de bandeja/conectar-WhatsApp quedan de esqueleto listas para conectar.
 
 ## Qué está implementado
 
@@ -43,9 +47,9 @@ Se coordina por escrito en [`local/Acuerdos-Frontend-Backend.md`](./local/Acuerd
 
 La cuenta de OpenRouter está en USD 0. Los embeddings devuelven 402, así que los documentos se quedan en "En cola" y el chat de pruebas responde 502 ("El asistente no pudo responder ahora mismo"). El front ya muestra ambos casos como corresponde; con saldo, funcionan sin tocar código.
 
-## PR stack
+## PR stack (histórico — ya mergeado completo en `develop`)
 
-Cada rama sale de la anterior y su PR va contra la anterior. `feature/c-shared-ui` es la única que va contra `develop`.
+Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-shared-ui` fue la única que fue contra `develop`. Se deja la tabla como referencia de qué trajo cada una.
 
 | # | Rama | Qué trae |
 |---|---|---|
@@ -74,6 +78,6 @@ Cada rama sale de la anterior y su PR va contra la anterior. `feature/c-shared-u
 - Prueba e2e del recorrido completo: crear → configurar → subir documento → probar → publicar.
 - Pulgar arriba/abajo de `ai_feedback`: el modelo de datos lo pide y ninguna historia lo recoge.
 
-## Fuera de Track C
+## Fuera de alcance de este repo por ahora
 
-Bandeja, contactos, pipeline, campañas, reportes reales, SignalR y sitio marketing completo.
+Contactos, pipeline, campañas, reportes reales y sitio marketing completo — son Track D, sin dueño activo (ver la nota de arriba sobre las ramas de Track D sin mergear en el backend). Bandeja y canales pasaron a estar EN alcance (Track B, ver sección siguiente).
