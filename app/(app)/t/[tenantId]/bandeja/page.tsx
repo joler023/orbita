@@ -1,12 +1,6 @@
-import { ModulePlaceholder } from "@/components/shell/module-placeholder";
-import { Inbox } from "lucide-react";
+import { InboxWorkspace } from "@/components/inbox/inbox-workspace";
 
-export default function BandejaPage() {
-  return (
-    <ModulePlaceholder
-      icon={Inbox}
-      title="La bandeja aún no está lista"
-      description="Esta sección la está construyendo el equipo de canales. Cuando haya conversaciones, las atenderás desde aquí."
-    />
-  );
+export default async function BandejaPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
+  return <InboxWorkspace tenantId={tenantId} />;
 }
