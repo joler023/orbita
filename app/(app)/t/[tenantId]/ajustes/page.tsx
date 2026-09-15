@@ -1,12 +1,6 @@
-import { ModulePlaceholder } from "@/components/shell/module-placeholder";
-import { Settings } from "lucide-react";
+import { SettingsWorkspace } from "@/components/settings/settings-workspace";
 
-export default function AjustesPage() {
-  return (
-    <ModulePlaceholder
-      icon={Settings}
-      title="Ajustes en construcción"
-      description="El equipo, la facturación y la seguridad se configuran aquí cuando esas pantallas existan."
-    />
-  );
+export default async function AjustesPage({ params }: { params: Promise<{ tenantId: string }> }) {
+  const { tenantId } = await params;
+  return <SettingsWorkspace tenantId={tenantId} />;
 }
