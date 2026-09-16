@@ -24,12 +24,13 @@ function whatsapp(overrides: Partial<ChannelAccount> = {}): ChannelAccount {
   return {
     id: "c1",
     kind: "WhatsApp",
-    displayName: "Panadería La Espiga",
     externalId: "573001234567",
+    displayName: "Panadería La Espiga",
+    phoneE164: "+573001234567",
     status: "Connected",
+    connectedAt: "2026-09-01T12:00:00+00:00",
     tokenExpiresAt: null,
     expiresSoon: false,
-    createdAt: "2026-09-01T12:00:00+00:00",
     ...overrides,
   };
 }

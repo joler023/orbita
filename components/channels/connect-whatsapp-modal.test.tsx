@@ -32,12 +32,13 @@ const tenantId = "11111111-1111-4111-8111-111111111111";
 const account: ChannelAccount = {
   id: "c1",
   kind: "WhatsApp",
-  displayName: "Panadería La Espiga",
   externalId: "573001234567",
+  displayName: "Panadería La Espiga",
+  phoneE164: "+573001234567",
   status: "Connected",
+  connectedAt: "2026-09-01T12:00:00+00:00",
   tokenExpiresAt: null,
   expiresSoon: false,
-  createdAt: "2026-09-01T12:00:00+00:00",
 };
 
 function renderModal(onConnected = vi.fn()) {
