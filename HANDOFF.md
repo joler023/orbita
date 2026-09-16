@@ -156,6 +156,7 @@ nuevo», que en este caso es el consejo correcto.
 ## Huecos de backlog sin dueño
 
 - **La cola de traspasos (`ORB-C07`) no tiene pantalla ni dueño decidido.** El backend ya expone `GET .../handoffs` (con `{ items, nextCursor, total }`, la espera más antigua primero) y `POST .../conversations/{id}/return-to-assistant`. La superficie natural es la bandeja, que es de Track B y otra persona está construyendo; también cabría una lista suelta en Agente IA. **Mientras no exista, `escalar_a_humano` deja clientes esperando que nadie ve desde el panel**, y la tarjeta de la herramienta lo advierte. Tampoco hay aviso en vivo: no hay cliente de SignalR.
+  Para quien construya esa pantalla: mostrar `summary`, no `lastMessagePreview`. Ese campo es el último mensaje en cualquier dirección (así lo define `ORB-B03`), así que casi siempre es nuestra propia frase de traspaso. Y `summary` llega `null` unos segundos: significa «todavía no», no «no hay». Tiempos medidos contra la base compartida: la frase le llega al cliente ~3,8 s después de su mensaje y el resumen ~4 s más tarde. En «Panadería La Espiga» quedó a propósito una conversación de prueba esperando en la cola, para verificar la forma real.
 
 No son de Track C y no se toman por cuenta propia; están anotados para que alguien decida:
 
