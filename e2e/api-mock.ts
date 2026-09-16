@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 
 export const TENANT_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
 export const API_ORIGIN = "http://localhost:5091";
@@ -11,6 +11,32 @@ const corsHeaders = {
 };
 
 export const SECOND_TENANT_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+export const AGENT_ID = "9b2c3d4e-5f60-4712-8a9b-0c1d2e3f4a5b";
+
+function newAgent(): Record<string, unknown> {
+  return {
+    id: AGENT_ID,
+    name: "Aura",
+    personality: "",
+    instructions: "",
+    style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
+    tools: [],
+    guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+    isEnabled: false,
+    hasUnpublishedChanges: false,
+    draft: null,
+    conversationCount: 0,
+    createdAt: "2026-09-15T12:00:00Z",
+  };
+}
+
+async function json(route: Route, body: unknown, status = 200): Promise<void> {
+  await route.fulfill({
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
 
 export async function mockOrbitaApi(
   page: Page,
@@ -30,6 +56,10 @@ export async function mockOrbitaApi(
       ? [{ tenantId: SECOND_TENANT_ID, slug: "clinica", name: "Clínica Sonrisa", role: "Viewer" }]
       : []),
   ];
+
+  // The assistant screens read and write, so the mock keeps state for the length of a test.
+  let agents: Array<Record<string, unknown>> = [];
+  let documents: Array<Record<string, unknown>> = [];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -134,6 +164,113 @@ export async function mockOrbitaApi(
         }),
       });
       return;
+    }
+
+    if (url.pathname === "/api/ai-tools" && method === "GET") {
+      await json(route, [
+        {
+          key: "consultar_conocimiento",
+          displayName: "Consultar los documentos del negocio",
+          description: "Busca la respuesta en los documentos que subiste.",
+          isAvailable: true,
+          unavailableReason: null,
+          resultsIn: null,
+        },
+        {
+          key: "crear_oportunidad",
+          displayName: "Registrar una oportunidad de venta",
+          description: "Crea una oportunidad en el tablero.",
+          isAvailable: true,
+          unavailableReason: null,
+          resultsIn: "pipeline",
+        },
+      ]);
+      return;
+    }
+
+    const agentsPath = `/api/tenants/${TENANT_ID}/ai-agents`;
+
+    if (url.pathname === agentsPath && method === "GET") {
+      await json(route, agents);
+      return;
+    }
+
+    if (url.pathname === agentsPath && method === "POST") {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      const created = { ...newAgent(), ...body, id: AGENT_ID };
+      agents = [...agents, created];
+      await json(route, created, 201);
+      return;
+    }
+
+    if (url.pathname.startsWith(`${agentsPath}/${AGENT_ID}`)) {
+      const rest = url.pathname.slice(`${agentsPath}/${AGENT_ID}`.length);
+      const patch = (changes: Record<string, unknown>) => {
+        agents = agents.map((agent) =>
+          agent.id === AGENT_ID ? { ...agent, ...changes } : agent,
+        );
+        return agents.find((agent) => agent.id === AGENT_ID);
+      };
+
+      if (rest === "" && method === "PATCH") {
+        const body = request.postDataJSON() as Record<string, unknown>;
+        await json(route, patch({ ...body, hasUnpublishedChanges: true }));
+        return;
+      }
+      if (rest === "/publish" && method === "POST") {
+        await json(route, patch({ hasUnpublishedChanges: false, draft: null }));
+        return;
+      }
+      if (rest === "/enabled" && method === "PATCH") {
+        const body = request.postDataJSON() as { isEnabled: boolean };
+        await json(route, patch({ isEnabled: body.isEnabled }));
+        return;
+      }
+      if (rest === "/guardrails" && method === "PUT") {
+        const body = request.postDataJSON() as Record<string, unknown>;
+        await json(route, patch({ guardrails: body }));
+        return;
+      }
+      if (rest === "/knowledge" && method === "GET") {
+        await json(route, { items: documents, nextCursor: null });
+        return;
+      }
+      if ((rest === "/knowledge" || rest === "/knowledge/text") && method === "POST") {
+        // Indexed straight away: the polling path has its own unit coverage.
+        const document = {
+          id: `doc-${documents.length + 1}`,
+          agentId: AGENT_ID,
+          title: "Catálogo",
+          sourceType: rest.endsWith("text") ? "Manual" : "Upload",
+          status: "Indexed",
+          chunkCount: 4,
+          failureReason: null,
+          indexedAt: "2026-09-15T12:00:00Z",
+          createdAt: "2026-09-15T12:00:00Z",
+        };
+        documents = [...documents, document];
+        await json(route, document, 202);
+        return;
+      }
+      if (rest === "/test-chat" && method === "POST") {
+        await json(route, {
+          reply: "Abrimos de lunes a sábado, de 7 a 19.",
+          retrieved: [
+            {
+              chunkId: "c1",
+              documentId: "doc-1",
+              documentTitle: "Catálogo",
+              chunkIndex: 0,
+              content: "Horario: lunes a sábado.",
+              score: 0.82,
+            },
+          ],
+          toolCalls: [{ tool: "consultar_conocimiento", summary: "Buscó en Catálogo" }],
+          usage: { tokensIn: 900, tokensOut: 120, costUsd: 0.0004, latencyMs: 1400 },
+          testedDraft: false,
+        });
+        return;
+      }
     }
 
     await route.fulfill({ status: 404, headers: corsHeaders, body: "" });
