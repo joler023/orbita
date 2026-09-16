@@ -24,7 +24,11 @@ Sobre lo que dejó `ORB-D01` (paleta, shell, cliente HTTP, login/registro/2FA/re
 
 **Sesión**: `GET /api/auth/me` devuelve identidad y membresías, así que al iniciar sesión se entra directo a la organización (la última usada si se pertenece a varias) y `/sin-organizacion` queda solo para quien no pertenece a ninguna. Quien pertenece a varias cambia entre ellas desde el pie del panel lateral; con una sola, el nombre se muestra como texto y no como un control que no hace nada.
 
-**Límites del asistente** (pestaña «Límites» de la 2.6): temas de los que no habla, con campo de etiquetas, y la frase que responde en su lugar. Se guardan en `PUT .../guardrails` y **rigen al guardar, sin publicar** — por eso el pie de Guardar/Publicar se oculta en esa pestaña, para no ofrecer dos guardados distintos a la vez. Ahí mismo está «¿Cuándo trabaja?».
+**Límites del asistente** (pestaña «Límites» de la 2.6): temas de los que no habla, con campo de etiquetas, y la frase que responde en su lugar. Se guardan en `PUT .../guardrails`.
+
+**Horario** (pestaña «Horario»): «Siempre» o «Solo fuera del horario laboral». La segunda pide el horario del equipo, semana completa, con varias franjas por día — un turno partido se conserva en vez de perderse al guardar. El asistente cubre lo que quede fuera (`outsideHours: "AssistantAnswers"`); «Siempre» manda `businessHours: null`. Se guarda en `PUT .../business-hours`.
+
+Horario y límites **rigen al guardar, sin publicar** — por eso el pie de Guardar/Publicar se oculta en esas dos pestañas (`hidden`, fuera del árbol de accesibilidad), para no ofrecer dos guardados distintos a la vez.
 
 ## Decisiones que ya se tomaron (no reabrir sin motivo)
 
@@ -36,7 +40,8 @@ Sobre lo que dejó `ORB-D01` (paleta, shell, cliente HTTP, login/registro/2FA/re
 - El rol que devuelve `/me` sirve para **esconder**, no para autorizar: el control real es el 403 del backend (`ORB-A08`).
 - Nada de jerga de modelos en la interfaz: el backend expone `style` (formal↔cercano, breve↔detallado, neutro↔entusiasta) y nunca `prompt`, `modelo`, `temperatura` ni `tokens`. Hay pruebas que fallan si esas palabras aparecen.
 - Los tipos de las rutas de Track C se escriben a mano en `lib/api/`: el snapshot `openapi/orbita.json` es de `develop` y no las incluye todavía. Hoy ese snapshot tiene 8 rutas (auth, organizations, `tenants/{id}`); el backend quedó de refrescarlo cuando su stack entre a `develop`.
-- La 2.6 tiene **dos velocidades y se ven separadas**: nombre, personalidad, instrucciones, estilo y herramientas se redactan, se guardan y se publican; encendido, horario y límites rigen al momento. No es una inconsistencia: un ajuste operativo no puede quedar rehén de un borrador a medio escribir, que es el mismo motivo por el que `PATCH .../enabled` es subrecurso.
+- La 2.6 tiene **dos velocidades y se ven separadas**: nombre, personalidad, instrucciones, estilo y herramientas se redactan, se guardan y se publican; encendido, horario y límites rigen al momento. No es una inconsistencia: un ajuste operativo no puede quedar rehén de un borrador a medio escribir, que es el mismo motivo por el que `PATCH .../enabled` es subrecurso. Cada pestaña tiene **un solo guardar**: por eso el horario tiene pestaña propia en vez de compartirla con los límites.
+- **El horario es del asistente, no de la organización**, y eso ya estaba decidido: `orbita-schema.dbml` pone `business_hours jsonb` en `ai_agents` y deja `tenants` con `timezone` y nada más. Se llegó a plantear moverlo al tenant para no duplicarlo por asistente; el modelo de datos, que `CLAUDE.md` declara autoritativo, ya había respondido que no.
 - **La caché semántica (`ORB-C12`) no se construyó a propósito.** El backend expone `PUT .../semantic-cache` con `level` (`Off`/`Conservative`/`Balanced`/`Aggressive`), pero no aparece en la Guía de Pantallas, es P2 y su default `Off` no cambia el comportamiento. Añadirla haría más difícil la pantalla que la propia Guía llama «la segunda más difícil del producto». Se retoma si el producto la pide.
 - El catálogo de herramientas trae `resultsIn` (dónde aterriza el resultado) y el dashboard decide qué decir de ese módulo: el mapa está en `describeToolResult`, en [`components/agents/agent-format.ts`](./components/agents/agent-format.ts). Cuando `/pipeline` deje de ser un cartel, se cambia ahí y en ningún otro sitio.
 
@@ -94,6 +99,7 @@ Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-share
 | 6 | `feature/c-org-switcher` | Cambiar de organización desde el panel lateral |
 | 7 | `feature/c-agent-e2e` | Arreglo del mock de e2e y recorrido completo del asistente |
 | 8 | `feature/c10-business-hours` | «¿Cuándo trabaja?» y `PUT .../business-hours` |
+| 9 | `feature/c10-schedule-editor` | Pestaña «Horario»: semana completa con turnos partidos |
 
 Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, así que contra `develop` de la API todavía responden 404. Los tipos y las pruebas ya están escritos contra el contrato acordado.
 
@@ -106,7 +112,7 @@ Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, 
 
 ## Lo que sigue en Track C
 
-- **El horario del negocio está a medias, y la decisión no es del front.** Hoy la 2.6 ofrece «Siempre» y deja «Solo fuera del horario laboral» deshabilitada con su razón visible, porque no existe ningún horario contra el cual estar «fuera». El contrato del backend pone el horario en el asistente (`slots` por día, hasta 21), pero si el horario es del negocio, vivir ahí lo duplica por asistente. Mientras eso no se decida, el criterio de la Guía («siempre, o solo fuera del horario laboral») queda cumplido a medias a propósito.
+- **Pantalla de reglas del enrutador (`ORB-C08`).** Su criterio pide que «el orden de evaluación de las reglas sea visible y configurable», y el backend ya expone `GET|PUT .../routing/rules`. Es historia de Track C, pero **ninguna de las 22 pantallas de la Guía de Diseño la cubre**, así que no hay diseño del que partir. No se inventa sin acordarlo.
 - Barra superior de Figma (selector de asistente con Guardar y Publicar arriba); hoy esos botones están al pie del editor.
 - Casos de prueba guardados de `ORB-C11`: es criterio de aceptación y el backend nunca decidió si viven en una tabla o en el cliente.
 - Pulgar arriba/abajo de `ai_feedback`: el modelo de datos lo pide y ninguna historia lo recoge.
