@@ -21,6 +21,20 @@ import {
 import { AlertTriangle, ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+/** Same list in the same order: the order is data here, so a reorder is a change. */
+function sameRules(a: ReadonlyArray<RoutingRule>, b: ReadonlyArray<RoutingRule>): boolean {
+  return (
+    a.length === b.length &&
+    a.every(
+      (rule, index) =>
+        rule.name === b[index].name &&
+        rule.channel === b[index].channel &&
+        (rule.keyword ?? null) === (b[index].keyword ?? null) &&
+        rule.agentId === b[index].agentId,
+    )
+  );
+}
+
 const CHANNEL_LABELS: Record<ChannelKind, string> = {
   WhatsApp: "WhatsApp",
   Instagram: "Instagram",
@@ -35,15 +49,18 @@ type LoadState = "loading" | "ready" | "error";
 export type RoutingRulesPanelProps = {
   tenantId: string;
   agents: ReadonlyArray<AiAgent>;
+  /** Lets the workspace ask before leaving with unsaved rules, as it does for the editor. */
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 const selectClass =
   "h-9 w-full rounded-lg border border-border bg-surface px-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbita-500";
 
-export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) {
+export function RoutingRulesPanel({ tenantId, agents, onDirtyChange }: RoutingRulesPanelProps) {
   const { notify } = useToast();
   const [state, setState] = useState<LoadState>("loading");
   const [rules, setRules] = useState<RoutingRule[]>([]);
+  const [saved, setSaved] = useState<RoutingRule[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -54,6 +71,7 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
       .then((result) => {
         if (!cancelled) {
           setRules(result);
+          setSaved(result);
           setState("ready");
         }
       })
@@ -66,6 +84,12 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
       cancelled = true;
     };
   }, [tenantId, reloadKey]);
+
+  const dirty = state === "ready" && !sameRules(rules, saved);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const update = (index: number, changes: Partial<RoutingRule>) => {
     setRules((current) =>
@@ -106,7 +130,9 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
     setError(null);
     setSaving(true);
     try {
-      setRules(await saveRoutingRules(tenantId, rules));
+      const stored = await saveRoutingRules(tenantId, rules);
+      setRules(stored);
+      setSaved(stored);
       notify("Guardamos el orden. Tus conversaciones ya se reparten así.", "success");
     } catch (caught) {
       notify(toUserMessage(caught), "error");
@@ -150,7 +176,10 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
 
       {rules.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted">
-          Todavía no hay reglas, así que todas las conversaciones llegan a tu equipo.
+          {/* Only claim what is true on the server: an unsaved empty list routes nothing yet. */}
+          {dirty
+            ? "Quitaste todas las reglas. Cuando guardes, todas las conversaciones llegarán a tu equipo."
+            : "Todavía no hay reglas, así que todas las conversaciones llegan a tu equipo."}
         </p>
       ) : (
         <ol className="flex flex-col gap-3">
@@ -285,6 +314,7 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+        {dirty ? <p className="w-full text-xs text-muted sm:order-2 sm:w-auto sm:flex-1 sm:text-right">Tienes cambios sin guardar.</p> : null}
         <Button
           variant="secondary"
           size="sm"
@@ -294,7 +324,7 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
         >
           Agregar regla
         </Button>
-        <Button size="sm" onClick={() => void save()} disabled={saving}>
+        <Button size="sm" className="sm:order-3" onClick={() => void save()} disabled={saving || !dirty}>
           {saving ? "Guardando…" : "Guardar reglas"}
         </Button>
       </div>

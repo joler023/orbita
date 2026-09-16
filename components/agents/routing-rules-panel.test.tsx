@@ -29,12 +29,13 @@ function rule(overrides: Partial<RoutingRule> = {}): RoutingRule {
   return { name: "Pedidos", channel: "WhatsApp", keyword: null, agentId: "a1", ...overrides };
 }
 
-function renderPanel() {
+function renderPanel(onDirtyChange = vi.fn()) {
   render(
     <ToastProvider>
-      <RoutingRulesPanel tenantId={tenantId} agents={agents} />
+      <RoutingRulesPanel tenantId={tenantId} agents={agents} onDirtyChange={onDirtyChange} />
     </ToastProvider>,
   );
+  return { onDirtyChange };
 }
 
 describe("RoutingRulesPanel", () => {
@@ -141,6 +142,60 @@ describe("RoutingRulesPanel", () => {
       "Ponle un nombre a la regla 1, para saber qué hace sin abrirla.",
     );
     expect(saveRoutingRules).not.toHaveBeenCalled();
+  });
+
+  it("keeps the save button off until something changes", async () => {
+    const user = userEvent.setup();
+    listRoutingRules.mockResolvedValue([rule()]);
+    renderPanel();
+
+    expect(await screen.findByRole("button", { name: "Guardar reglas" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Nombre de la regla 1"), " nuevos");
+
+    expect(screen.getByRole("button", { name: "Guardar reglas" })).toBeEnabled();
+    expect(screen.getByText("Tienes cambios sin guardar.")).toBeInTheDocument();
+  });
+
+  it("treats a reorder as a change, because the order is what decides", async () => {
+    const user = userEvent.setup();
+    listRoutingRules.mockResolvedValue([rule({ name: "Primera" }), rule({ name: "Segunda" })]);
+    renderPanel();
+
+    await user.click(await screen.findByRole("button", { name: "Bajar la regla 1" }));
+
+    expect(screen.getByText("Tienes cambios sin guardar.")).toBeInTheDocument();
+  });
+
+  it("does not claim conversations reach the team before the empty list is saved", async () => {
+    const user = userEvent.setup();
+    const stored = { ...rule(), id: "r1", position: 0 };
+    listRoutingRules.mockResolvedValue([stored]);
+    saveRoutingRules.mockResolvedValue([]);
+    renderPanel();
+
+    await user.click(await screen.findByRole("button", { name: "Eliminar la regla 1" }));
+
+    expect(screen.getByText(/Quitaste todas las reglas\. Cuando guardes/)).toBeInTheDocument();
+    expect(screen.queryByText(/así que todas las conversaciones llegan a tu equipo/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Guardar reglas" }));
+
+    expect(await screen.findByText(/así que todas las conversaciones llegan a tu equipo/)).toBeInTheDocument();
+    expect(screen.queryByText("Tienes cambios sin guardar.")).not.toBeInTheDocument();
+  });
+
+  it("tells the workspace about unsaved rules so leaving can ask first", async () => {
+    const user = userEvent.setup();
+    listRoutingRules.mockResolvedValue([rule()]);
+    const { onDirtyChange } = renderPanel();
+
+    await screen.findByLabelText("Nombre de la regla 1");
+    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+
+    await user.click(screen.getByRole("button", { name: "Eliminar la regla 1" }));
+
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
   });
 
   it("offers a retry when the rules cannot be read", async () => {

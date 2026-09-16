@@ -184,7 +184,7 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
             Reparte las conversaciones nuevas entre tus asistentes y tu equipo.
           </p>
         </header>
-        <RoutingRulesPanel tenantId={tenantId} agents={agents} />
+        <RoutingRulesPanel tenantId={tenantId} agents={agents} onDirtyChange={setDirty} />
       </section>
     );
   } else if (selection?.kind === "new") {
