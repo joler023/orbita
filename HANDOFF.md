@@ -6,7 +6,7 @@ Para las reglas de arquitectura/negocio, ver [`CLAUDE.md`](./CLAUDE.md). Este ar
 
 ## Última actualización
 
-**2026-09-14** — Corrección: las 11 ramas de Track C (agentes de IA) **ya están mergeadas en `develop`** (PR #8 a #18, en el orden de la tabla de abajo) — la nota anterior decía "sin mergear" y ya no es cierta. `ORB-C10` completo, `ORB-C11` a falta de créditos del proveedor (ver `HANDOFF.md` del backend).
+**2026-09-16** — Las 11 ramas de Track C (agentes de IA) **ya están mergeadas en `develop`** (PR #8 a #18, en el orden de la tabla de abajo). `ORB-C10` completo, `ORB-C11` a falta de créditos del proveedor (ver `HANDOFF.md` del backend). Encima hay un **segundo stack sin mergear** con los límites del asistente (`ORB-C06` en la 2.6), el horario, el selector de organizaciones y la prueba e2e del recorrido completo — ver [PR stack](#pr-stack).
 
 Además, en `orbita-api` (backend) hay una rama de Track D (`feature/d01-dashboard-shell` ya mergeada; `d02-contactos`, `d03-busqueda`, `d04-pipelines`, `d05-oportunidades`, `d12-sitio-publico`, `d13-exportacion`, `figma-alignment` **todavía no**) — contactos, búsqueda, pipelines, oportunidades, exportación y sitio público. Nadie de este repo la está tomando todavía; queda para quien retome Track D.
 
@@ -22,7 +22,9 @@ Sobre lo que dejó `ORB-D01` (paleta, shell, cliente HTTP, login/registro/2FA/re
 
 **Agente IA** (`/t/[tenantId]/agente`): lista de asistentes con activar/pausar y eliminar; editor con pestañas Instrucciones (nombre, personalidad, instrucciones con ejemplos copiables y los tres deslizadores de estilo), Herramientas (catálogo del backend, las no disponibles explican por qué), Conocimiento (subir archivos o pegar texto, estado por documento con refresco cada 3 s solo mientras algo se indexa, reindexar y eliminar) y Pruebas (chat con la traza: herramientas usadas, documentos citados, tokens y costo). Guardar deja borrador, Publicar lo pone en vivo, Descartar lo borra.
 
-**Sesión**: `GET /api/auth/me` devuelve identidad y membresías, así que al iniciar sesión se entra directo a la organización (la última usada si se pertenece a varias) y `/sin-organizacion` queda solo para quien no pertenece a ninguna.
+**Sesión**: `GET /api/auth/me` devuelve identidad y membresías, así que al iniciar sesión se entra directo a la organización (la última usada si se pertenece a varias) y `/sin-organizacion` queda solo para quien no pertenece a ninguna. Quien pertenece a varias cambia entre ellas desde el pie del panel lateral; con una sola, el nombre se muestra como texto y no como un control que no hace nada.
+
+**Límites del asistente** (pestaña «Límites» de la 2.6): temas de los que no habla, con campo de etiquetas, y la frase que responde en su lugar. Se guardan en `PUT .../guardrails` y **rigen al guardar, sin publicar** — por eso el pie de Guardar/Publicar se oculta en esa pestaña, para no ofrecer dos guardados distintos a la vez. Ahí mismo está «¿Cuándo trabaja?».
 
 ## Decisiones que ya se tomaron (no reabrir sin motivo)
 
@@ -33,7 +35,10 @@ Sobre lo que dejó `ORB-D01` (paleta, shell, cliente HTTP, login/registro/2FA/re
 - La identidad **no** se copia a `localStorage`: viene de `/api/auth/me`. Ahí solo queda `orbita.lastTenantId`, y como preferencia de "la última organización que usaste", no como fuente de verdad.
 - El rol que devuelve `/me` sirve para **esconder**, no para autorizar: el control real es el 403 del backend (`ORB-A08`).
 - Nada de jerga de modelos en la interfaz: el backend expone `style` (formal↔cercano, breve↔detallado, neutro↔entusiasta) y nunca `prompt`, `modelo`, `temperatura` ni `tokens`. Hay pruebas que fallan si esas palabras aparecen.
-- Los tipos de las rutas de Track C se escriben a mano en `lib/api/`: el snapshot `openapi/orbita.json` es de `develop` y no las incluye todavía.
+- Los tipos de las rutas de Track C se escriben a mano en `lib/api/`: el snapshot `openapi/orbita.json` es de `develop` y no las incluye todavía. Hoy ese snapshot tiene 8 rutas (auth, organizations, `tenants/{id}`); el backend quedó de refrescarlo cuando su stack entre a `develop`.
+- La 2.6 tiene **dos velocidades y se ven separadas**: nombre, personalidad, instrucciones, estilo y herramientas se redactan, se guardan y se publican; encendido, horario y límites rigen al momento. No es una inconsistencia: un ajuste operativo no puede quedar rehén de un borrador a medio escribir, que es el mismo motivo por el que `PATCH .../enabled` es subrecurso.
+- **La caché semántica (`ORB-C12`) no se construyó a propósito.** El backend expone `PUT .../semantic-cache` con `level` (`Off`/`Conservative`/`Balanced`/`Aggressive`), pero no aparece en la Guía de Pantallas, es P2 y su default `Off` no cambia el comportamiento. Añadirla haría más difícil la pantalla que la propia Guía llama «la segunda más difícil del producto». Se retoma si el producto la pide.
+- El catálogo de herramientas trae `resultsIn` (dónde aterriza el resultado) y el dashboard decide qué decir de ese módulo: el mapa está en `describeToolResult`, en [`components/agents/agent-format.ts`](./components/agents/agent-format.ts). Cuando `/pipeline` deje de ser un cartel, se cambia ahí y en ningún otro sitio.
 
 ## Estado del backend
 
@@ -43,15 +48,27 @@ Se coordina por escrito en [`local/Acuerdos-Frontend-Backend.md`](./local/Acuerd
 - El endpoint de membresías (`/api/auth/me`) es de Track A, pero lo construyó la sesión de Track C con autorización expresa del equipo, ante un bloqueo de producto: sin él no se podía usar la app en un navegador nuevo. Vive en `feature/a16-current-user-memberships` y añade una política RLS sobre `memberships` más un `app.user_id` en el `UnitOfWork`; **quien lleve Track A debería revisarlo antes de que entre a `develop`**.
 - Para probar el front con todo junto, el backend dejó `integration/track-c-with-a16` (solo para preview, no para mergear).
 
+### Segunda ronda de acuerdos (2026-09-15)
+
+Lo que sigue se acordó por mensajería entre sesiones y **todavía no está volcado** en `local/Acuerdos-Frontend-Backend.md`, que se quedó en la segunda tanda. Sustituye a lo anterior donde lo contradiga:
+
+- `MessageDto` trae `authorKind` (`Human`/`AiAgent`/`System`) y `aiRunId`. No hay `agentName` por mensaje porque una conversación conserva su asistente y nunca se re-enruta; el nombre se resuelve una vez por hilo.
+- Borrar un asistente con historial ya no devuelve 500 sino **409 `Assistant has history`**; borrar sigue funcionando para uno que nunca atendió a nadie.
+- Los guardrails van en su propio subrecurso y el match de temas es por **palabra completa** (así que «precio» no atrapa «precios»: el dueño agrega el plural). La frase de fuera de alcance la escribe el dueño; el default no promete un traspaso que todavía no existe.
+- La caché semántica se expone como `level` enumerado, nunca como un umbral numérico.
+- El enrutador decide **quién** y el horario decide **si ese contesta ahora**; fuera de horario la conversación no queda marcada con un asistente que no va a responder.
+
+Sigue abierto, y no es del front: el `code` estable en `ProblemDetails` (`ORB-A08`/Track A). Sin él, cada título nuevo del backend degrada en silencio al mensaje genérico de `lib/api/errors.ts` — el 409 de arriba fue el primer caso real.
+
 ### Lo único que falta para que el agente responda de verdad
 
-La cuenta de OpenRouter está en USD 0. Los embeddings devuelven 402, así que los documentos se quedan en "En cola" y el chat de pruebas responde 502 ("El asistente no pudo responder ahora mismo"). El front ya muestra ambos casos como corresponde; con saldo, funcionan sin tocar código.
+Con créditos en el proveedor de modelos, los documentos se indexan y el chat de pruebas responde. Sin ellos, los embeddings devuelven 402: los documentos se quedan en «En cola» y el chat responde 502 («El asistente no pudo responder ahora mismo»). El front ya muestra ambos casos como corresponde.
 
 ## PR stack (histórico — ya mergeado completo en `develop`)
 
 Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-shared-ui` fue la única que fue contra `develop`. Se deja la tabla como referencia de qué trajo cada una.
 
-| # | Rama | Qué trae |
+| # | Rama | Qué trajo |
 |---|---|---|
 | 1 | `feature/c-shared-ui` | Bloques compartidos, tokens de estado y arreglos del cliente HTTP |
 | 2 | `feature/c10-agents-api` | `lib/api/ai-agents` y `lib/api/knowledge`, errores en español |
@@ -65,6 +82,21 @@ Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-share
 | 10 | `feature/c-shared-ux` | Scroll compartido, avisos, transiciones y cursor de los botones |
 | 11 | `feature/c-session-memberships` | `/me` con membresías: entrar directo a tu organización |
 
+### Stack abierto, sobre `develop`
+
+| # | Rama | Qué trae |
+|---|---|---|
+| 1 | `feature/c-delete-conflict-copy` | El 409 de borrar un asistente con historial deja de decir «inténtalo de nuevo» |
+| 2 | `feature/c-tag-field` | `TagField`: bloque compartido de etiquetas con chips |
+| 3 | `feature/c06-guardrails-api` | Tipos, `PUT .../guardrails` y validación espejo de la del backend |
+| 4 | `feature/c06-guardrails-screen` | Pestaña «Límites» de la 2.6, con su propio guardar |
+| 5 | `feature/c05-tool-results` | `resultsIn`: cada herramienta dice dónde deja su trabajo |
+| 6 | `feature/c-org-switcher` | Cambiar de organización desde el panel lateral |
+| 7 | `feature/c-agent-e2e` | Arreglo del mock de e2e y recorrido completo del asistente |
+| 8 | `feature/c10-business-hours` | «¿Cuándo trabaja?» y `PUT .../business-hours` |
+
+Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, así que contra `develop` de la API todavía responden 404. Los tipos y las pruebas ya están escritos contra el contrato acordado.
+
 ## Cómo retomar
 
 1. `cp .env.example .env.local` y apuntar `NEXT_PUBLIC_API_BASE_URL` a la API (por defecto `http://localhost:5091`).
@@ -74,9 +106,17 @@ Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-share
 
 ## Lo que sigue en Track C
 
+- **El horario del negocio está a medias, y la decisión no es del front.** Hoy la 2.6 ofrece «Siempre» y deja «Solo fuera del horario laboral» deshabilitada con su razón visible, porque no existe ningún horario contra el cual estar «fuera». El contrato del backend pone el horario en el asistente (`slots` por día, hasta 21), pero si el horario es del negocio, vivir ahí lo duplica por asistente. Mientras eso no se decida, el criterio de la Guía («siempre, o solo fuera del horario laboral») queda cumplido a medias a propósito.
 - Barra superior de Figma (selector de asistente con Guardar y Publicar arriba); hoy esos botones están al pie del editor.
-- Prueba e2e del recorrido completo: crear → configurar → subir documento → probar → publicar.
+- Casos de prueba guardados de `ORB-C11`: es criterio de aceptación y el backend nunca decidió si viven en una tabla o en el cliente.
 - Pulgar arriba/abajo de `ai_feedback`: el modelo de datos lo pide y ninguna historia lo recoge.
+
+## Huecos de backlog sin dueño
+
+No son de Track C y no se toman por cuenta propia; están anotados para que alguien decida:
+
+- `ORB-C08` pide que «el orden de evaluación de las reglas sea visible y configurable». Los endpoints existen (`GET|PUT .../routing/rules`) y no hay pantalla en la Guía.
+- `ORB-C12` pide medir el porcentaje de aciertos. El backend expone `hitRate` y no hay dónde mostrarlo; lo más cercano es el panel de consumo, `ORB-D11`.
 
 ## Fuera de alcance de este repo por ahora
 
