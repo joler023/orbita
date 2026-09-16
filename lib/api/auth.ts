@@ -63,6 +63,16 @@ export function canManageAiAgents(role: MemberRole): boolean {
   return role === "Owner" || role === "Admin";
 }
 
+/** Roles that may invite, resend, revoke, change the role of, or remove team members (ORB-A08's ManageTeam). */
+export function canManageTeam(role: MemberRole): boolean {
+  return role === "Owner" || role === "Admin";
+}
+
+/** Roles that may change the plan or view invoices (ORB-A08's ManageBilling — Owner-only). */
+export function canManageBilling(role: MemberRole): boolean {
+  return role === "Owner";
+}
+
 export function requestPasswordReset(email: string): Promise<void> {
   return apiRequest<void>("/api/auth/forgot-password", {
     method: "POST",

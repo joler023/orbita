@@ -26,6 +26,14 @@ const TITLE_COPY: Record<string, string> = {
   "Document too large": "El archivo pesa más de 25 MB. Divídelo o comprímelo antes de subirlo.",
   "Empty upload": "El archivo está vacío. Elige otro.",
   "Model provider unavailable": "El asistente no pudo responder ahora mismo. Inténtalo de nuevo en un momento.",
+  "Invitation not found": "Esa invitación ya no existe. Puede que ya se haya usado o revocado.",
+  "Invalid invitation": "Este enlace de invitación ya no es válido. Pide uno nuevo.",
+  "Member not found": "Esa persona ya no está en el equipo. Recarga la lista.",
+  "Cannot remove last owner": "No puedes dejar la organización sin un dueño. Asigna el rol de dueño a otra persona primero.",
+  "Membership already exists": "Esa persona ya pertenece a tu equipo.",
+  "Plan not found": "Ese plan ya no está disponible.",
+  "Subscription not found": "No encontramos una suscripción activa.",
+  "Subscription already exists": "Tu organización ya tiene un plan contratado.",
   "Unexpected error": "Algo salió mal. Inténtalo de nuevo en un momento.",
 };
 
