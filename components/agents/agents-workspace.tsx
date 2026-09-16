@@ -8,18 +8,20 @@ import { PermissionState } from "@/components/ui/permission-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/cn";
 import { deleteAiAgent, listAiAgents, setAiAgentEnabled, type AiAgent } from "@/lib/api/ai-agents";
 import { ApiError, toUserMessage } from "@/lib/api/errors";
-import { Bot, Plus } from "lucide-react";
+import { Bot, Plus, Split } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { AgentEditor } from "./agent-editor";
 import { formatAgentsMeta } from "./agent-format";
 import { AgentHeader } from "./agent-header";
 import { AgentList } from "./agent-list";
+import { RoutingRulesPanel } from "./routing-rules-panel";
 
 type LoadState = "loading" | "ready" | "forbidden" | "error";
 
-type Selection = { kind: "agent"; id: string } | { kind: "new" };
+type Selection = { kind: "agent"; id: string } | { kind: "new" } | { kind: "rules" };
 
 export type AgentsWorkspaceProps = {
   tenantId: string;
@@ -170,7 +172,22 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   }
 
   let detail: ReactNode = null;
-  if (selection?.kind === "new") {
+  if (selection?.kind === "rules") {
+    detail = (
+      <section
+        aria-label="Reglas de asignación"
+        className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5"
+      >
+        <header className="border-b border-border pb-4">
+          <h2 className="text-lg font-semibold text-foreground">¿Quién atiende cada conversación?</h2>
+          <p className="text-sm text-muted">
+            Reparte las conversaciones nuevas entre tus asistentes y tu equipo.
+          </p>
+        </header>
+        <RoutingRulesPanel tenantId={tenantId} agents={agents} />
+      </section>
+    );
+  } else if (selection?.kind === "new") {
     detail = (
       <section
         aria-label="Nuevo asistente"
@@ -229,16 +246,32 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
           meta={formatAgentsMeta(agents.length, activeCount)}
           onSelect={(id) => select({ kind: "agent", id })}
           footer={
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              leadingIcon={<Plus className="size-4" aria-hidden="true" />}
-              onClick={() => select({ kind: "new" })}
-              disabled={selection?.kind === "new"}
-            >
-              Nuevo asistente
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                leadingIcon={<Plus className="size-4" aria-hidden="true" />}
+                onClick={() => select({ kind: "new" })}
+                disabled={selection?.kind === "new"}
+              >
+                Nuevo asistente
+              </Button>
+              <button
+                type="button"
+                aria-current={selection?.kind === "rules" ? "true" : undefined}
+                onClick={() => select({ kind: "rules" })}
+                className={cn(
+                  "mt-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbita-500",
+                  selection?.kind === "rules"
+                    ? "border-orbita-600 bg-orbita-50 font-medium text-foreground"
+                    : "border-border bg-surface text-muted hover:bg-background hover:text-foreground",
+                )}
+              >
+                <Split className="size-4 shrink-0" aria-hidden="true" />
+                Reglas de asignación
+              </button>
+            </>
           }
         />
       </ScrollArea>

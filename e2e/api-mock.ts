@@ -27,7 +27,7 @@ function newAgent(): Record<string, unknown> {
     hasUnpublishedChanges: false,
     draft: null,
     conversationCount: 0,
-    createdAt: "2026-09-15T12:00:00Z",
+    createdAt: "2026-09-15T12:00:00.123456+00:00",
   };
 }
 
@@ -61,6 +61,7 @@ export async function mockOrbitaApi(
   // The assistant screens read and write, so the mock keeps state for the length of a test.
   let agents: Array<Record<string, unknown>> = [];
   let documents: Array<Record<string, unknown>> = [];
+  let routingRules: Array<Record<string, unknown>> = [];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -189,6 +190,17 @@ export async function mockOrbitaApi(
       return;
     }
 
+    if (url.pathname === `/api/tenants/${TENANT_ID}/routing/rules`) {
+      if (method === "PUT") {
+        // Reads are a bare array, writes are wrapped: mirrors the real API, asymmetry included.
+        routingRules = (request.postDataJSON() as { rules: Record<string, unknown>[] }).rules.map(
+          (rule, position) => ({ ...rule, id: `rule-${position + 1}`, position }),
+        );
+      }
+      await json(route, routingRules);
+      return;
+    }
+
     const agentsPath = `/api/tenants/${TENANT_ID}/ai-agents`;
 
     if (url.pathname === agentsPath && method === "GET") {
@@ -251,8 +263,8 @@ export async function mockOrbitaApi(
           status: "Indexed",
           chunkCount: 4,
           failureReason: null,
-          indexedAt: "2026-09-15T12:00:00Z",
-          createdAt: "2026-09-15T12:00:00Z",
+          indexedAt: "2026-09-15T12:00:00.123456+00:00",
+          createdAt: "2026-09-15T12:00:00.123456+00:00",
         };
         documents = [...documents, document];
         await json(route, document, 202);
