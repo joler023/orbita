@@ -29,4 +29,28 @@ describe("RadioCardGroup", () => {
     await user.click(screen.getByText("Trato de usted"));
     expect(onChange).toHaveBeenCalledWith("a");
   });
+
+  it("puts an option out of reach and says why instead of just greying it", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <RadioCardGroup
+        name="tone"
+        legend="Tono"
+        options={[
+          { value: "a", title: "Muy formal" },
+          { value: "b", title: "Equilibrado", disabledReason: "Llega con el horario del negocio." },
+        ]}
+        value="a"
+        onChange={onChange}
+      />,
+    );
+
+    const blocked = screen.getByRole("radio", { name: /Equilibrado/ });
+    expect(blocked).toBeDisabled();
+    expect(blocked).toHaveAccessibleDescription("Llega con el horario del negocio.");
+
+    await user.click(blocked);
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
