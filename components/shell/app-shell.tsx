@@ -65,7 +65,7 @@ export function AppShell({
 
   return (
     <div className="flex min-h-full bg-background">
-      <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r border-border bg-surface p-4 lg:flex">
+      <aside className="hidden w-60 shrink-0 flex-col gap-6 border-r border-[#ecebf5] bg-sidebar p-5 lg:flex">
         <Logo href={`/t/${tenantId}/inicio`} />
         <SidebarNav tenantId={tenantId} pathname={pathname} />
         <div className="mt-auto flex flex-col gap-2">
@@ -84,7 +84,7 @@ export function AppShell({
             aria-label="Cerrar menú"
             onClick={() => setMenuOpen(false)}
           />
-          <aside className="relative z-50 flex h-full w-72 flex-col gap-6 bg-surface p-4 shadow-xl">
+          <aside className="relative z-50 flex h-full w-60 flex-col gap-6 bg-sidebar p-5 shadow-xl">
             <Logo href={`/t/${tenantId}/inicio`} />
             <SidebarNav tenantId={tenantId} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
             <div className="mt-auto flex flex-col gap-2">
@@ -98,7 +98,11 @@ export function AppShell({
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col gap-6 p-4 lg:p-6">
-        <TopBar title={title} onOpenMenu={() => setMenuOpen(true)} />
+        <TopBar
+          title={title}
+          onOpenMenu={() => setMenuOpen(true)}
+          compact={pathname.includes("/contactos")}
+        />
         <main className="min-h-0 flex-1">{children}</main>
       </div>
     </div>

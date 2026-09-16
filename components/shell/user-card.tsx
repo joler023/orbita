@@ -12,9 +12,9 @@ export function UserCard({
   const email = user?.email ?? "";
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-orbita-50/70 px-3 py-2">
+    <div className="flex items-center gap-2.5">
       <span
-        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-orbita-500 text-xs font-semibold text-white"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#ece6ff] text-sm font-bold text-nav-active"
         aria-hidden="true"
       >
         {initialsFromName(name)}

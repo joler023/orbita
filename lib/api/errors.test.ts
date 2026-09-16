@@ -9,6 +9,12 @@ describe("toUserMessage", () => {
     expect(toUserMessage(new ApiError(409, "Email already registered", "no"))).toBe(
       "Este correo ya tiene una cuenta.",
     );
+    expect(toUserMessage(new ApiError(409, "Stage has opportunities", "no"))).toBe(
+      "Mueve las oportunidades a otra etapa antes de borrar esta.",
+    );
+    expect(toUserMessage(new ApiError(409, "Contact already exists", "no"))).toBe(
+      "Ya existe un contacto con ese teléfono o Instagram.",
+    );
   });
 
   it("detects the two-factor challenge", () => {

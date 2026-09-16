@@ -7,7 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "http://localhost:3000",
   "Access-Control-Allow-Credentials": "true",
   "Access-Control-Allow-Headers": "content-type,accept",
-  "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+};
+
+const defaultPipeline = {
+  id: "pipe-1",
+  name: "Ventas",
+  isDefault: true,
+  stages: [
+    { id: "s1", name: "Nuevo", sortOrder: 0, isWon: false, isLost: false },
+    { id: "s2", name: "En conversación", sortOrder: 1, isWon: false, isLost: false },
+    { id: "s3", name: "Propuesta", sortOrder: 2, isWon: false, isLost: false },
+    { id: "s4", name: "Ganada", sortOrder: 3, isWon: true, isLost: false },
+    { id: "s5", name: "Perdida", sortOrder: 4, isWon: false, isLost: true },
+  ],
 };
 
 export async function mockOrbitaApi(
@@ -97,6 +110,123 @@ export async function mockOrbitaApi(
           email: "ana@orbita.test",
           fullName: "Ana Pérez",
         }),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/members` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/pipelines/pipe-1/board` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pipelineId: "pipe-1",
+          pipelineName: "Ventas",
+          stages: defaultPipeline.stages.map((stage, index) => ({
+            ...stage,
+            amountSum: index === 0 ? 1500 : 0,
+            opportunities:
+              index === 0
+                ? [
+                    {
+                      id: "o1",
+                      pipelineId: "pipe-1",
+                      stageId: stage.id,
+                      title: "Sitio web",
+                      amount: 1500,
+                      assignedToUserId: null,
+                      assignedToName: null,
+                      contactId: null,
+                      lastMoveEventId: null,
+                      createdAt: "2026-09-07T00:00:00Z",
+                    },
+                  ]
+                : [],
+          })),
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/contacts` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([
+          {
+            id: "11111111-1111-1111-1111-111111111111",
+            displayName: "Ana Pérez",
+            phone: "+573001112233",
+            instagramUsername: null,
+            email: "ana@shop.com",
+            channel: "whatsapp",
+            updatedAt: "2026-09-07T00:00:00Z",
+            stageName: "Propuesta",
+            amount: 1500,
+            assignedToName: "Carlos",
+          },
+        ]),
+      });
+      return;
+    }
+
+    if (
+      url.pathname === `/api/tenants/${TENANT_ID}/contacts/11111111-1111-1111-1111-111111111111` &&
+      method === "GET"
+    ) {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: "11111111-1111-1111-1111-111111111111",
+          displayName: "Ana Pérez",
+          phone: "+573001112233",
+          instagramUsername: null,
+          email: "ana@shop.com",
+          channel: "whatsapp",
+          customFields: {},
+          createdAt: "2026-09-07T00:00:00Z",
+          updatedAt: "2026-09-07T00:00:00Z",
+        }),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/contact-fields` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (
+      url.pathname ===
+        `/api/tenants/${TENANT_ID}/contacts/11111111-1111-1111-1111-111111111111/opportunities` &&
+      method === "GET"
+    ) {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+
+    if (url.pathname === `/api/tenants/${TENANT_ID}/pipelines` && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify([defaultPipeline]),
       });
       return;
     }

@@ -6,9 +6,11 @@ import { Menu, Plus, Search } from "lucide-react";
 export function TopBar({
   title,
   onOpenMenu,
+  compact = false,
 }: {
   title: string;
   onOpenMenu: () => void;
+  compact?: boolean;
 }) {
   return (
     <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -24,9 +26,10 @@ export function TopBar({
         </Button>
         <div>
           <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-          <p className="text-sm text-muted">{formatHeaderDate()}</p>
+          {compact ? null : <p className="text-sm text-muted">{formatHeaderDate()}</p>}
         </div>
       </div>
+      {compact ? null : (
       <div className="flex flex-1 items-center gap-3 lg:max-w-xl lg:justify-end">
         <div className="min-w-0 flex-1">
           <Input
@@ -45,6 +48,7 @@ export function TopBar({
           Nueva conversación
         </Button>
       </div>
+      )}
     </header>
   );
 }

@@ -12,7 +12,7 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClass: Record<ButtonVariant, string> = {
   primary:
-    "bg-orbita-500 text-white hover:bg-orbita-600 disabled:bg-orbita-200 disabled:text-white",
+    "bg-orbita-600 text-white hover:bg-orbita-700 disabled:bg-orbita-200 disabled:text-white",
   secondary:
     "border border-border bg-surface text-foreground hover:bg-orbita-50 disabled:text-muted",
   ghost: "text-foreground hover:bg-orbita-50 disabled:text-muted",
