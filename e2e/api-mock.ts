@@ -10,15 +10,26 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
 };
 
+export const SECOND_TENANT_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
 export async function mockOrbitaApi(
   page: Page,
   options: {
     meStatus?: number;
     login?: "ok" | "invalid" | "two-factor";
+    /** Add the second organization to test moving between them. */
+    secondOrganization?: boolean;
   } = {},
 ): Promise<void> {
   const meStatus = options.meStatus ?? 401;
   const login = options.login ?? "ok";
+
+  const memberships = [
+    { tenantId: TENANT_ID, slug: "negocio", name: "Negocio", role: "Owner" },
+    ...(options.secondOrganization
+      ? [{ tenantId: SECOND_TENANT_ID, slug: "clinica", name: "Clínica Sonrisa", role: "Viewer" }]
+      : []),
+  ];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -35,7 +46,12 @@ export async function mockOrbitaApi(
         await route.fulfill({
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "11111111-1111-1111-1111-111111111111" }),
+          body: JSON.stringify({
+            userId: "11111111-1111-1111-1111-111111111111",
+            email: "ana@orbita.test",
+            fullName: "Ana Pérez",
+            memberships,
+          }),
         });
         return;
       }
