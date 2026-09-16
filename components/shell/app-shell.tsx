@@ -2,7 +2,6 @@
 
 import { ScreenTransition } from "@/components/ui/screen-transition";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getTenant } from "@/lib/api/auth";
 import { primaryNav } from "@/lib/navigation";
 import { useCurrentUser } from "@/lib/session/current-user";
 import { writeLastTenantId } from "@/lib/session/storage";
@@ -20,31 +19,12 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [organizationName, setOrganizationName] = useState<string | undefined>();
   const user = useCurrentUser();
 
-  // Until identity can list a user's organizations, the last one they were inside is how
-  // the next sign-in knows where to land (see /sin-organizacion).
+  // Remembered as a preference only: the next sign-in lands here when the person still
+  // belongs to it, and /api/auth/me stays the source of truth (see /sin-organizacion).
   useEffect(() => {
     writeLastTenantId(tenantId);
-  }, [tenantId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    getTenant(tenantId)
-      .then((tenant) => {
-        if (!cancelled) {
-          setOrganizationName(tenant.name);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOrganizationName(undefined);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
   }, [tenantId]);
 
   const current = primaryNav.find((item) => pathname.includes(`/${item.href}`));
@@ -68,7 +48,7 @@ export function AppShell({
           tenantId={tenantId}
           pathname={pathname}
           user={user}
-          organizationName={organizationName}
+          memberships={user.memberships}
         />
       </aside>
 
@@ -85,7 +65,7 @@ export function AppShell({
               tenantId={tenantId}
               pathname={pathname}
               user={user}
-              organizationName={organizationName}
+              memberships={user.memberships}
               onNavigate={() => setMenuOpen(false)}
             />
           </aside>

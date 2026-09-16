@@ -13,7 +13,9 @@ describe("SidebarPanel", () => {
         tenantId="tenant-1"
         pathname="/t/tenant-1/agente"
         user={{ email: "ana@orbita.com", fullName: "Ana Pérez" }}
-        organizationName="Panadería Demo"
+        memberships={[
+          { tenantId: "tenant-1", slug: "panaderia", name: "Panadería Demo", role: "Owner" },
+        ]}
         />
       </ToastProvider>,
     );
