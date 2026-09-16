@@ -73,6 +73,11 @@ export function canManageBilling(role: MemberRole): boolean {
   return role === "Owner";
 }
 
+/** Roles that may connect, re-verify, or disconnect a channel account (ORB-B01's ManageChannels). */
+export function canManageChannels(role: MemberRole): boolean {
+  return role === "Owner" || role === "Admin";
+}
+
 export function requestPasswordReset(email: string): Promise<void> {
   return apiRequest<void>("/api/auth/forgot-password", {
     method: "POST",
