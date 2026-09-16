@@ -156,7 +156,7 @@ export function TestBenchPanel({ tenantId, agentId }: TestBenchPanelProps) {
             variant="secondary"
             size="sm"
             disabled={exchanges.length === 0 || busy || full}
-            title={full ? `Ya tienes ${TEST_CASES_MAX} casos guardados. Borra alguno para guardar otro.` : undefined}
+            title={full ? `Ya tienes ${TEST_CASES_MAX} casos guardados. Elimina alguno para guardar otro.` : undefined}
             leadingIcon={<Bookmark className="size-4" aria-hidden="true" />}
             onClick={() => setSavingOpen(true)}
           >
@@ -271,7 +271,10 @@ function TraceLine({ result }: { result: AgentTestResult }) {
   );
 }
 
-/** Only speaks up when the answer changed: an unchanged answer needs no comparison. */
+/**
+ * Shows what the case recorded, without claiming why it differs: the model words the same
+ * answer differently from one run to the next, so "it changed" would often be false.
+ */
 function PreviousReply({ exchange }: { exchange: Exchange }) {
   if (exchange.previousReply === undefined) {
     return null;
@@ -283,8 +286,9 @@ function PreviousReply({ exchange }: { exchange: Exchange }) {
     return <p className="text-right text-xs text-muted">Igual que cuando guardaste el caso.</p>;
   }
   return (
-    <div className="rounded-lg border border-warning-border bg-warning-bg px-3 py-2 text-xs text-warning-fg">
-      <span className="font-semibold">Cambió. Antes respondía:</span> {exchange.previousReply}
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-muted">
+      <span className="font-semibold text-foreground">Al guardar el caso respondió:</span>{" "}
+      {exchange.previousReply}
     </div>
   );
 }

@@ -216,7 +216,7 @@ describe("TestBenchPanel", () => {
       });
     });
 
-    it("points out the answers that changed since the case was saved", async () => {
+    it("shows the recorded answer next to a different one, without claiming it changed", async () => {
       const user = userEvent.setup();
       listTestCases.mockResolvedValue([deliveries]);
       runAgentTest
@@ -227,8 +227,10 @@ describe("TestBenchPanel", () => {
       await user.click(await screen.findByRole("button", { name: "Probar de nuevo" }));
 
       expect(await screen.findByText("Igual que cuando guardaste el caso.")).toBeInTheDocument();
-      const changed = await screen.findByText(/Cambió\. Antes respondía:/);
-      expect(changed.parentElement).toHaveTextContent("Cuesta $5.000.");
+      const recorded = await screen.findByText("Al guardar el caso respondió:");
+      expect(recorded.parentElement).toHaveTextContent("Cuesta $5.000.");
+      // The model rewords answers between runs, so a different text is not proof of a change.
+      expect(screen.queryByText(/Cambió/)).not.toBeInTheDocument();
     });
 
     it("stops the replay and says why when a question fails", async () => {
