@@ -1,11 +1,28 @@
 import { describe, expect, it } from "vitest";
 import {
+  describeToolResult,
   ENERGY_AXIS,
   formatAgentsMeta,
   formatConversationCount,
   FORMALITY_AXIS,
   VERBOSITY_AXIS,
 } from "./agent-format";
+
+describe("describeToolResult", () => {
+  it("says nothing when the tool leaves nothing to look at", () => {
+    expect(describeToolResult(null)).toBeNull();
+  });
+
+  it("stays quiet about a module it does not know, instead of inventing one", () => {
+    expect(describeToolResult("agenda")).toBeNull();
+  });
+
+  it("warns when the results land on a screen that is not built yet", () => {
+    expect(describeToolResult("pipeline")).toBe(
+      "Lo que registre aparece en Pipeline, que todavía no puedes abrir desde el panel.",
+    );
+  });
+});
 
 describe("agent formatting", () => {
   it("pluralizes the 30-day conversation count", () => {

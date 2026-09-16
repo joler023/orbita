@@ -12,6 +12,28 @@ export function formatAgentsMeta(total: number, active: number): string {
   return `${agents} · ${actives}`;
 }
 
+/**
+ * Where a tool's work shows up, and whether that screen exists in the dashboard yet. The API
+ * says which module (`resultsIn`); which modules are still placeholders is ours to know, so
+ * this is the single place to flip when one of them ships.
+ */
+const TOOL_DESTINATIONS: Record<string, { label: string; ready: boolean }> = {
+  pipeline: { label: "Pipeline", ready: false },
+};
+
+export function describeToolResult(resultsIn: string | null): string | null {
+  if (!resultsIn) {
+    return null;
+  }
+  const destination = TOOL_DESTINATIONS[resultsIn];
+  if (!destination) {
+    return null;
+  }
+  return destination.ready
+    ? `Lo que registre aparece en ${destination.label}.`
+    : `Lo que registre aparece en ${destination.label}, que todavía no puedes abrir desde el panel.`;
+}
+
 export type StyleAxis<T extends string> = {
   levels: readonly [T, T, T];
   startLabel: string;

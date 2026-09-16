@@ -75,6 +75,12 @@ export type AiTool = {
   description: string;
   isAvailable: boolean;
   unavailableReason: string | null;
+  /**
+   * Which module the result lands in ("pipeline"), or null when the tool leaves nothing to
+   * look at. Open on purpose: the API names the destination and the dashboard decides what
+   * to say about it, so a new module needs no frontend release.
+   */
+  resultsIn: string | null;
 };
 
 function agentsPath(tenantId: string): string {

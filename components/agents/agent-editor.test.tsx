@@ -47,6 +47,7 @@ const tools: AiTool[] = [
     description: "Busca en lo que subiste.",
     isAvailable: true,
     unavailableReason: null,
+    resultsIn: null,
   },
 ];
 
