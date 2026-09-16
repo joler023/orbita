@@ -30,6 +30,8 @@ Sobre lo que dejó `ORB-D01` (paleta, shell, cliente HTTP, login/registro/2FA/re
 
 **Reglas de asignación** (entrada propia bajo la lista de asistentes, `ORB-C08`): quién atiende cada conversación nueva. Cada regla es «llega por [canal] · y menciona [palabra] · la atiende [asistente o Mi equipo]», numerada y con flechas para reordenar, porque **gana la primera que coincida**. Si una regla sin canal ni palabra no está de última, la pantalla avisa que se come todas las de abajo — la API la acepta y no se bloquea, solo deja de pasar inadvertida. **No hay pantalla en la Guía de Diseño para esto**: se diseñó siguiendo la estética del resto, con visto bueno explícito del responsable del track.
 
+**Casos de prueba guardados** (pestaña «Pruebas», `ORB-C11`): una conversación de prueba se guarda con un nombre y se vuelve a probar después de cambiar el asistente. Al re-ejecutar se repiten las preguntas contra el asistente de hoy, encadenando las respuestas nuevas como historial, y cada respuesta dice si **quedó igual o cambió** («Cambió. Antes respondía: …»), que es lo que le da sentido a repetirla. Viven en el servidor (`GET|POST|DELETE .../test-cases`), no en el navegador, porque su valor es justamente sobrevivir a un cambio de máquina. Tope de 20 por asistente.
+
 Horario y límites **rigen al guardar, sin publicar** — por eso el pie de Guardar/Publicar se oculta en esas dos pestañas (`hidden`, fuera del árbol de accesibilidad), para no ofrecer dos guardados distintos a la vez.
 
 ## Decisiones que ya se tomaron (no reabrir sin motivo)
@@ -103,6 +105,7 @@ Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-share
 | 8 | `feature/c10-business-hours` | «¿Cuándo trabaja?» y `PUT .../business-hours` |
 | 9 | `feature/c10-schedule-editor` | Pestaña «Horario»: semana completa con turnos partidos |
 | 10 | `feature/c08-routing-rules` | Reglas de asignación: orden visible y reordenable |
+| 11 | `feature/c11-saved-test-cases` | Guardar casos de prueba y re-ejecutarlos comparando respuestas |
 
 Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, así que contra `develop` de la API todavía responden 404. Los tipos y las pruebas ya están escritos contra el contrato acordado.
 
@@ -116,7 +119,6 @@ Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, 
 ## Lo que sigue en Track C
 
 - Barra superior de Figma (selector de asistente con Guardar y Publicar arriba); hoy esos botones están al pie del editor.
-- Casos de prueba guardados de `ORB-C11`: es criterio de aceptación y el backend nunca decidió si viven en una tabla o en el cliente.
 - Pulgar arriba/abajo de `ai_feedback`: el modelo de datos lo pide y ninguna historia lo recoge.
 
 ## Huecos de backlog sin dueño
