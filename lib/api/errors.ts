@@ -21,6 +21,8 @@ const TITLE_COPY: Record<string, string> = {
   Forbidden: "No tienes permiso para esta acción.",
   "AI agent not found": "Ese asistente ya no existe. Puede que alguien lo haya eliminado.",
   "Cannot delete last agent": "No puedes eliminar tu único asistente. Pausa el asistente si no quieres que responda.",
+  "Assistant has history":
+    "Este asistente ya atendió conversaciones, así que no puedes eliminarlo. Ponlo en pausa si no quieres que siga respondiendo.",
   "Knowledge document not found": "Ese documento ya no existe. Recarga la lista.",
   "Unsupported document type": "Ese tipo de archivo no se puede subir. Usa PDF, DOCX, TXT o MD.",
   "Document too large": "El archivo pesa más de 25 MB. Divídelo o comprímelo antes de subirlo.",

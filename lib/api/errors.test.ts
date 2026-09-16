@@ -20,6 +20,14 @@ describe("toUserMessage", () => {
     );
   });
 
+  it("tells the owner to pause instead of retrying when the assistant has history", () => {
+    const message = toUserMessage(new ApiError(409, "Assistant has history", "no"));
+    expect(message).toBe(
+      "Este asistente ya atendió conversaciones, así que no puedes eliminarlo. Ponlo en pausa si no quieres que siga respondiendo.",
+    );
+    expect(message).not.toMatch(/int[ée]ntalo de nuevo/i);
+  });
+
   it("detects the two-factor challenge", () => {
     expect(isTwoFactorRequired(new ApiError(401, "Two-factor code required", "need code"))).toBe(
       true,
