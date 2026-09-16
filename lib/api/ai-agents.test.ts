@@ -30,6 +30,7 @@ const agent: AiAgent = {
   draft: null,
   tools: ["consultar_conocimiento"],
   guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+  businessHours: null,
   isEnabled: true,
   conversationCount: 0,
   createdAt: "2026-09-11T12:00:00+00:00",

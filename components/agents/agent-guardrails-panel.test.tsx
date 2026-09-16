@@ -1,15 +1,20 @@
 import { ToastProvider } from "@/components/ui/toast";
-import type { AgentGuardrails, AiAgent } from "@/lib/api/ai-agents";
+import type { AgentGuardrails, AiAgent, BusinessHours } from "@/lib/api/ai-agents";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentGuardrailsPanel } from "./agent-guardrails-panel";
 
 const saveAgentGuardrails = vi.fn();
+const saveBusinessHours = vi.fn();
 
 vi.mock("@/lib/api/ai-agents", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/ai-agents")>();
-  return { ...actual, saveAgentGuardrails: (...args: unknown[]) => saveAgentGuardrails(...args) };
+  return {
+    ...actual,
+    saveAgentGuardrails: (...args: unknown[]) => saveAgentGuardrails(...args),
+    saveBusinessHours: (...args: unknown[]) => saveBusinessHours(...args),
+  };
 });
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
@@ -19,7 +24,15 @@ const guardrails: AgentGuardrails = {
   outOfScopeReply: "Eso lo ve alguien del equipo.",
 };
 
-function renderPanel(overrides: Partial<AgentGuardrails> = {}) {
+const weekdayMornings: BusinessHours = {
+  slots: [{ day: "Monday", opens: "09:00:00", closes: "13:00:00" }],
+  outsideHours: "AssistantAnswers",
+};
+
+function renderPanel(
+  overrides: Partial<AgentGuardrails> = {},
+  businessHours: BusinessHours | null = null,
+) {
   const onSaved = vi.fn();
   render(
     <ToastProvider>
@@ -27,6 +40,7 @@ function renderPanel(overrides: Partial<AgentGuardrails> = {}) {
         tenantId={tenantId}
         agentId="a1"
         guardrails={{ ...guardrails, ...overrides }}
+        businessHours={businessHours}
         onSaved={onSaved}
       />
     </ToastProvider>,
@@ -37,6 +51,35 @@ function renderPanel(overrides: Partial<AgentGuardrails> = {}) {
 describe("AgentGuardrailsPanel", () => {
   beforeEach(() => {
     saveAgentGuardrails.mockReset();
+    saveBusinessHours.mockReset();
+  });
+
+  it("offers the two choices the design guide asks for", () => {
+    renderPanel();
+
+    expect(screen.getByRole("group", { name: "¿Cuándo trabaja?" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Siempre/ })).toBeChecked();
+  });
+
+  it("explains why the schedule option cannot be picked yet, instead of hiding it", () => {
+    renderPanel();
+
+    const blocked = screen.getByRole("radio", { name: /Solo fuera del horario laboral/ });
+    expect(blocked).toBeDisabled();
+    expect(blocked).toHaveAccessibleDescription("Llega cuando puedas definir el horario de tu negocio.");
+  });
+
+  it("puts an assistant that had a schedule back on duty at all hours", async () => {
+    const user = userEvent.setup();
+    saveBusinessHours.mockResolvedValue({ id: "a1", businessHours: null } as AiAgent);
+    const { onSaved } = renderPanel({}, weekdayMornings);
+
+    expect(screen.getByRole("radio", { name: /Solo fuera del horario laboral/ })).toBeChecked();
+
+    await user.click(screen.getByRole("radio", { name: /Siempre/ }));
+
+    await waitFor(() => expect(saveBusinessHours).toHaveBeenCalledWith(tenantId, "a1", null));
+    expect(onSaved).toHaveBeenCalled();
   });
 
   it("says the limits apply without publishing", () => {
@@ -114,6 +157,7 @@ describe("AgentGuardrailsPanel", () => {
           tenantId={tenantId}
           agentId="a1"
           guardrails={guardrails}
+          businessHours={null}
           onSaved={vi.fn()}
         />
       </ToastProvider>,

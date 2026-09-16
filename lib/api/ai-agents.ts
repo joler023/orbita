@@ -37,6 +37,39 @@ export type AgentGuardrails = {
   outOfScopeReply: string;
 };
 
+export const WEEK_DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+export type WeekDay = (typeof WEEK_DAYS)[number];
+
+export const BUSINESS_HOURS_SLOTS_MAX = 21;
+
+/** One stretch of a single day, in the organization's own time zone. Never crosses midnight. */
+export type BusinessHoursSlot = {
+  day: WeekDay;
+  /** "HH:mm:ss" local time. */
+  opens: string;
+  closes: string;
+};
+
+export type OutsideHours = "AssistantAnswers" | "LeaveForTeam";
+
+/**
+ * When the business is open, and what the assistant does the rest of the time. A null
+ * schedule means the assistant is on duty around the clock, which is the default.
+ */
+export type BusinessHours = {
+  slots: BusinessHoursSlot[];
+  outsideHours: OutsideHours;
+};
+
 export type AiAgentDraft = {
   name: string;
   personality: string;
@@ -54,6 +87,7 @@ export type AiAgent = {
   style: AgentStyle;
   tools: string[];
   guardrails: AgentGuardrails;
+  businessHours: BusinessHours | null;
   isEnabled: boolean;
   hasUnpublishedChanges: boolean;
   draft: AiAgentDraft | null;
@@ -142,6 +176,21 @@ export function saveAgentGuardrails(
   return apiRequest<AiAgent>(`${agentsPath(tenantId)}/${agentId}/guardrails`, {
     method: "PUT",
     body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Applies immediately too. Null puts the assistant on duty at all hours; a schedule with no
+ * slots is refused by the API, because it would silence the assistant for good.
+ */
+export function saveBusinessHours(
+  tenantId: string,
+  agentId: string,
+  businessHours: BusinessHours | null,
+): Promise<AiAgent> {
+  return apiRequest<AiAgent>(`${agentsPath(tenantId)}/${agentId}/business-hours`, {
+    method: "PUT",
+    body: JSON.stringify({ businessHours }),
   });
 }
 

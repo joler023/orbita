@@ -22,6 +22,7 @@ function newAgent(): Record<string, unknown> {
     style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
     tools: [],
     guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+    businessHours: null,
     isEnabled: false,
     hasUnpublishedChanges: false,
     draft: null,

@@ -212,6 +212,7 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
         tenantId={tenantId}
         agentId={agent.id}
         guardrails={agent.guardrails}
+        businessHours={agent.businessHours}
         onSaved={onSaved}
       />
     );
