@@ -24,7 +24,7 @@ Sobre lo que dejó `ORB-D01` (paleta, shell, cliente HTTP, login/registro/2FA/re
 
 **Sesión**: `GET /api/auth/me` devuelve identidad y membresías, así que al iniciar sesión se entra directo a la organización (la última usada si se pertenece a varias) y `/sin-organizacion` queda solo para quien no pertenece a ninguna. Quien pertenece a varias cambia entre ellas desde el pie del panel lateral; con una sola, el nombre se muestra como texto y no como un control que no hace nada.
 
-**Límites del asistente** (pestaña «Límites» de la 2.6): temas de los que no habla, con campo de etiquetas, y la frase que responde en su lugar. Se guardan en `PUT .../guardrails`.
+**Límites del asistente** (pestaña «Límites» de la 2.6): temas de los que no habla, con campo de etiquetas, la frase que responde en su lugar y la **frase de traspaso** (`ORB-C07`), que lee el cliente cuando la conversación pasa a una persona. Se guardan en `PUT .../guardrails`. Un tema bloqueado ahora también deja la conversación esperando al equipo, y la pantalla lo dice.
 
 **Horario** (pestaña «Horario»): «Siempre» o «Solo fuera del horario laboral». La segunda pide el horario del equipo, semana completa, con varias franjas por día — un turno partido se conserva en vez de perderse al guardar. El asistente cubre lo que quede fuera (`outsideHours: "AssistantAnswers"`); «Siempre» manda `businessHours: null`. Se guarda en `PUT .../business-hours`.
 
@@ -106,6 +106,7 @@ Cada rama salía de la anterior y su PR iba contra la anterior. `feature/c-share
 | 9 | `feature/c10-schedule-editor` | Pestaña «Horario»: semana completa con turnos partidos |
 | 10 | `feature/c08-routing-rules` | Reglas de asignación: orden visible y reordenable |
 | 11 | `feature/c11-saved-test-cases` | Guardar casos de prueba y re-ejecutarlos comparando respuestas |
+| 12 | `feature/c07-handoff-reply` | Frase de traspaso y aviso de que las conversaciones escaladas no se ven aún |
 
 Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, así que contra `develop` de la API todavía responden 404. Los tipos y las pruebas ya están escritos contra el contrato acordado.
 
@@ -153,6 +154,8 @@ nuevo», que en este caso es el consejo correcto.
 - Pulgar arriba/abajo de `ai_feedback`: el modelo de datos lo pide y ninguna historia lo recoge.
 
 ## Huecos de backlog sin dueño
+
+- **La cola de traspasos (`ORB-C07`) no tiene pantalla ni dueño decidido.** El backend ya expone `GET .../handoffs` (con `{ items, nextCursor, total }`, la espera más antigua primero) y `POST .../conversations/{id}/return-to-assistant`. La superficie natural es la bandeja, que es de Track B y otra persona está construyendo; también cabría una lista suelta en Agente IA. **Mientras no exista, `escalar_a_humano` deja clientes esperando que nadie ve desde el panel**, y la tarjeta de la herramienta lo advierte. Tampoco hay aviso en vivo: no hay cliente de SignalR.
 
 No son de Track C y no se toman por cuenta propia; están anotados para que alguien decida:
 
