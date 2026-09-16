@@ -51,7 +51,7 @@ Horario y límites **rigen al guardar, sin publicar** — por eso el pie de Guar
 
 ## Estado del backend
 
-Se coordina por escrito en [`local/Acuerdos-Frontend-Backend.md`](./local/Acuerdos-Frontend-Backend.md) (31 preguntas con su respuesta). Lo relevante hoy:
+Se coordina por escrito en [`local/Acuerdos-Frontend-Backend.md`](./local/Acuerdos-Frontend-Backend.md) (una entrada por pregunta, en cuatro tandas; la última, del 2026-09-16). Lo relevante hoy:
 
 - Track C (agentes, conocimiento, búsqueda, banco de pruebas) está en un stack de ramas **sin mergear** en `orbita-api`.
 - El endpoint de membresías (`/api/auth/me`) es de Track A, pero lo construyó la sesión de Track C con autorización expresa del equipo, ante un bloqueo de producto: sin él no se podía usar la app en un navegador nuevo. Vive en `feature/a16-current-user-memberships` y añade una política RLS sobre `memberships` más un `app.user_id` en el `UnitOfWork`; **quien lleve Track A debería revisarlo antes de que entre a `develop`**.
@@ -115,6 +115,37 @@ Las rutas de las ramas 3, 5 y 8 están en el stack sin mergear de `orbita-api`, 
 2. `bun install && bun dev`.
 3. Para la API: levantarla desde `orbita-api` con el perfil `http` (`dotnet run --project Orbita.Api --launch-profile http`). El perfil `https` redirige el 5091 y rompe el CORS del front.
 4. Regenerar tipos cuando el contrato entre a `develop`: levantar la API, `bun run refresh:openapi`, `bun run generate:api`. No editar `lib/api/generated/schema.d.ts` a mano.
+5. **Probar contra la API real**, no solo contra los mocks: con la API corriendo,
+   `ORBITA_REAL_API=1 ORBITA_E2E_EMAIL=... ORBITA_E2E_PASSWORD=... bun run test:e2e real-api`.
+   Hace falta una cuenta dueña de una organización y Viewer en otra (la de demo sirve). Sin
+   `ORBITA_REAL_API=1` esas pruebas se saltan, así que la suite normal no depende de la API.
+
+## Probado contra la API real (2026-09-16)
+
+Los mocks de `e2e/api-mock.ts` son una hipótesis sobre el backend; esto la contrastó con la base
+compartida y modelos reales, sobre el stack de `orbita-api` que termina en `feature/c11-test-cases`.
+
+- **Contrato**: cada campo de los tipos de `lib/api/` comparado contra las respuestas reales,
+  **pobladas** (con borrador, horario, reglas y casos) — una lista vacía habría pasado sin probar
+  nada. Sin desvíos.
+- **Comportamiento**: 29 casos por HTTP — turno partido que vuelve en orden, `null` que limpia el
+  horario sin tocar los límites, ids de reglas que rotan en cada `PUT`, los dos 409 con su título
+  exacto, borrado idempotente de casos, 400 de validación, 404 de una regla a un asistente ajeno.
+- **Navegador**: `e2e/real-api.spec.ts`, 4 recorridos, en verde y repetible sin dejar datos nuevos.
+
+Lo que encontró y ya está corregido: la pantalla de reglas afirmaba «todas llegan a tu equipo» al
+borrarlas, **antes de guardar**, y no avisaba de cambios sin guardar al salir. Y la propia prueba
+tenía dos carreras que la hacían pasar sin verificar nada (contar reglas mientras cargaban,
+esperar una URL que ya se cumplía antes de cambiar de organización).
+
+**Datos de prueba que quedan** en «Panadería La Espiga», los dos en pausa y sin poder borrarse
+porque tienen historial: «[prueba front] no usar» (la prueba lo reutiliza a propósito) y
+«[prueba front] e2e 1789574606657» (sobrante de una corrida anterior al arreglo).
+
+**Inestable, del lado del backend**: la base cerró conexiones varias veces en una hora. Dos
+logins fallaron con 500 («An error occurred using a transaction»), ambos el primero tras un rato
+sin actividad; 25 logins seguidos funcionaron. El front muestra «Algo salió mal. Inténtalo de
+nuevo», que en este caso es el consejo correcto.
 
 ## Lo que sigue en Track C
 
