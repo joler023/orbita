@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { RadioCardGroup } from "@/components/ui/radio-card-group";
 import { TagField } from "@/components/ui/tag-field";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -10,35 +9,17 @@ import {
   BLOCKED_TOPIC_MAX_LENGTH,
   OUT_OF_SCOPE_REPLY_MAX_LENGTH,
   saveAgentGuardrails,
-  saveBusinessHours,
   validateGuardrails,
   type AgentGuardrails,
   type AiAgent,
-  type BusinessHours,
 } from "@/lib/api/ai-agents";
 import { toUserMessage } from "@/lib/api/errors";
 import { useState } from "react";
-
-type Duty = "always" | "outsideBusinessHours";
-
-const DUTY_OPTIONS = [
-  {
-    value: "always" as const,
-    title: "Siempre",
-    description: "Atiende a cualquier hora, todos los días.",
-  },
-  {
-    value: "outsideBusinessHours" as const,
-    title: "Solo fuera del horario laboral",
-    disabledReason: "Llega cuando puedas definir el horario de tu negocio.",
-  },
-];
 
 export type AgentGuardrailsPanelProps = {
   tenantId: string;
   agentId: string;
   guardrails: AgentGuardrails;
-  businessHours: BusinessHours | null;
   onSaved: (agent: AiAgent) => void;
 };
 
@@ -54,7 +35,6 @@ export function AgentGuardrailsPanel({
   tenantId,
   agentId,
   guardrails,
-  businessHours,
   onSaved,
 }: AgentGuardrailsPanelProps) {
   const { notify } = useToast();
@@ -62,24 +42,6 @@ export function AgentGuardrailsPanel({
   const [reply, setReply] = useState(guardrails.outOfScopeReply);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const duty: Duty = businessHours ? "outsideBusinessHours" : "always";
-
-  // Only "always" is reachable for now, so the single move this offers is going back to it.
-  const changeDuty = async (next: Duty) => {
-    if (next !== "always" || duty === "always") {
-      return;
-    }
-    setSaving(true);
-    try {
-      onSaved(await saveBusinessHours(tenantId, agentId, null));
-      notify("Tu asistente vuelve a atender a cualquier hora.", "success");
-    } catch (caught) {
-      notify(toUserMessage(caught), "error");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const current: AgentGuardrails = { blockedTopics: topics, outOfScopeReply: reply };
   const dirty = !isSame(current, guardrails);
@@ -110,15 +72,6 @@ export function AgentGuardrailsPanel({
       <p className="rounded-lg border border-info-border bg-info-bg px-3 py-2 text-xs text-info-fg">
         Esto empieza a regir apenas lo guardes, sin esperar a que publiques.
       </p>
-
-      <RadioCardGroup
-        name="duty"
-        legend="¿Cuándo trabaja?"
-        options={DUTY_OPTIONS}
-        value={duty}
-        onChange={(next) => void changeDuty(next)}
-        disabled={saving}
-      />
 
       <TagField
         label="¿De qué prefieres que no hable?"

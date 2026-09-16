@@ -27,12 +27,13 @@ import {
   type AgentDraftErrors,
 } from "./agent-draft";
 import { AgentGuardrailsPanel } from "./agent-guardrails-panel";
+import { AgentSchedulePanel } from "./agent-schedule-panel";
 import { AgentInstructionsFields } from "./agent-instructions-fields";
 import { AgentToolsFields } from "./agent-tools-fields";
 import { KnowledgePanel } from "./knowledge-panel";
 import { TestBenchPanel } from "./test-bench-panel";
 
-type EditorTab = "instructions" | "tools" | "guardrails" | "knowledge" | "tests";
+type EditorTab = "instructions" | "tools" | "schedule" | "guardrails" | "knowledge" | "tests";
 
 const BASE_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
   { value: "instructions", label: "Instrucciones" },
@@ -40,6 +41,7 @@ const BASE_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
 ];
 
 const SAVED_AGENT_TABS = [
+  { value: "schedule", label: "Horario" },
   { value: "guardrails", label: "Límites" },
   { value: "knowledge", label: "Conocimiento" },
   { value: "tests", label: "Pruebas" },
@@ -206,13 +208,21 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
   let panel: ReactNode = <AgentInstructionsFields draft={draft} errors={errors} onChange={change} />;
   if (tab === "tools") {
     panel = toolsPanel;
+  } else if (tab === "schedule" && agent) {
+    panel = (
+      <AgentSchedulePanel
+        tenantId={tenantId}
+        agentId={agent.id}
+        businessHours={agent.businessHours}
+        onSaved={onSaved}
+      />
+    );
   } else if (tab === "guardrails" && agent) {
     panel = (
       <AgentGuardrailsPanel
         tenantId={tenantId}
         agentId={agent.id}
         guardrails={agent.guardrails}
-        businessHours={agent.businessHours}
         onSaved={onSaved}
       />
     );
@@ -243,9 +253,10 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
       <Tabs label="Secciones del asistente" items={tabs} value={tab} onChange={setTab}>
         {panel}
       </Tabs>
-      {/* Limits save on their own and apply at once: a second "Guardar" here would be ambiguous. */}
+      {/* Schedule and limits save on their own and apply at once: a second "Guardar" here
+          would be ambiguous. */}
       <div
-        hidden={tab === "guardrails"}
+        hidden={tab === "schedule" || tab === "guardrails"}
         className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4"
       >
         {pendingNote ? <p className="mr-auto text-xs text-muted">{pendingNote}</p> : null}

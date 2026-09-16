@@ -227,6 +227,11 @@ export async function mockOrbitaApi(
         await json(route, patch({ isEnabled: body.isEnabled }));
         return;
       }
+      if (rest === "/business-hours" && method === "PUT") {
+        const body = request.postDataJSON() as Record<string, unknown>;
+        await json(route, patch({ businessHours: body.businessHours }));
+        return;
+      }
       if (rest === "/guardrails" && method === "PUT") {
         const body = request.postDataJSON() as Record<string, unknown>;
         await json(route, patch({ guardrails: body }));

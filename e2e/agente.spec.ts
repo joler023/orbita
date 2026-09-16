@@ -30,6 +30,12 @@ test("create, configure, feed and try an assistant, then publish it", async ({ p
     page.getByRole("checkbox", { name: /Registrar una oportunidad/ }),
   ).toHaveAccessibleDescription(/todavía no puedes abrir desde el panel/);
 
+  await page.getByRole("tab", { name: "Horario" }).click();
+  await page.getByRole("radio", { name: /Solo fuera del horario laboral/ }).check();
+  await page.getByLabel("Lunes: abre").fill("07:00");
+  await page.getByRole("button", { name: "Guardar horario" }).click();
+  await expect(page.getByText("Listo. Tu asistente atiende fuera de tu horario.")).toBeVisible();
+
   await page.getByRole("tab", { name: "Límites" }).click();
   await expect(page.getByText(/empieza a regir apenas lo guardes/)).toBeVisible();
   await page.getByLabel(/no hable/).fill("mayoreo");
