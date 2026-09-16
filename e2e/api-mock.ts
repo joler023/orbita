@@ -62,6 +62,7 @@ export async function mockOrbitaApi(
   let agents: Array<Record<string, unknown>> = [];
   let documents: Array<Record<string, unknown>> = [];
   let routingRules: Array<Record<string, unknown>> = [];
+  let testCases: Array<Record<string, unknown>> = [];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -268,6 +269,27 @@ export async function mockOrbitaApi(
         };
         documents = [...documents, document];
         await json(route, document, 202);
+        return;
+      }
+      if (rest === "/test-cases" && method === "GET") {
+        await json(route, testCases);
+        return;
+      }
+      if (rest === "/test-cases" && method === "POST") {
+        const body = request.postDataJSON() as Record<string, unknown>;
+        const saved = {
+          ...body,
+          id: `case-${testCases.length + 1}`,
+          createdAt: "2026-09-16T14:57:54.271948+00:00",
+        };
+        testCases = [...testCases, saved];
+        await json(route, saved, 201);
+        return;
+      }
+      if (rest.startsWith("/test-cases/") && method === "DELETE") {
+        const id = rest.slice("/test-cases/".length);
+        testCases = testCases.filter((testCase) => testCase.id !== id);
+        await route.fulfill({ status: 204, headers: corsHeaders, body: "" });
         return;
       }
       if (rest === "/test-chat" && method === "POST") {
