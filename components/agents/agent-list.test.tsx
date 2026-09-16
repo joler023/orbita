@@ -14,7 +14,7 @@ function agent(overrides: Partial<AiAgent>): AiAgent {
     hasUnpublishedChanges: false,
     draft: null,
     tools: [],
-    guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+    guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo.", handoffReply: "Listo: dejo de responderte yo y la conversación queda para alguien del equipo." },
     businessHours: null,
     isEnabled: true,
     conversationCount: 0,

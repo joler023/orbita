@@ -29,7 +29,7 @@ const agent: AiAgent = {
   hasUnpublishedChanges: false,
   draft: null,
   tools: ["consultar_conocimiento"],
-  guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+  guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo.", handoffReply: "Listo: dejo de responderte yo y la conversación queda para alguien del equipo." },
   businessHours: null,
   isEnabled: true,
   conversationCount: 0,
@@ -144,7 +144,11 @@ describe("ai agents api", () => {
   });
 
   it("saves guardrails on their own subresource, not through the draft", async () => {
-    const guardrails = { blockedTopics: ["dosis"], outOfScopeReply: "Te responde el equipo." };
+    const guardrails = {
+      blockedTopics: ["dosis"],
+      outOfScopeReply: "Te responde el equipo.",
+      handoffReply: "Te paso con el equipo.",
+    };
     const fetchMock = stubJson({ ...agent, guardrails });
 
     await saveAgentGuardrails(tenantId, "a1", guardrails);
@@ -158,16 +162,17 @@ describe("ai agents api", () => {
 
 describe("validateGuardrails", () => {
   const reply = "Eso lo ve alguien del equipo.";
+  const handoffReply = "Listo: dejo de responderte yo y la conversación queda para alguien del equipo.";
 
   it("accepts what the API accepts", () => {
-    expect(validateGuardrails({ blockedTopics: ["dosis"], outOfScopeReply: reply })).toBeNull();
-    expect(validateGuardrails({ blockedTopics: [], outOfScopeReply: reply })).toBeNull();
+    expect(validateGuardrails({ blockedTopics: ["dosis"], outOfScopeReply: reply, handoffReply })).toBeNull();
+    expect(validateGuardrails({ blockedTopics: [], outOfScopeReply: reply, handoffReply })).toBeNull();
   });
 
   it("rejects more topics than the API allows", () => {
     const blockedTopics = Array.from({ length: BLOCKED_TOPICS_MAX + 1 }, (_, i) => `tema ${i}`);
 
-    expect(validateGuardrails({ blockedTopics, outOfScopeReply: reply })).toBe(
+    expect(validateGuardrails({ blockedTopics, outOfScopeReply: reply, handoffReply })).toBe(
       "Puedes indicar hasta 50 temas.",
     );
   });
@@ -175,21 +180,33 @@ describe("validateGuardrails", () => {
   it("rejects a topic longer than the API allows", () => {
     const blockedTopics = ["x".repeat(BLOCKED_TOPIC_MAX_LENGTH + 1)];
 
-    expect(validateGuardrails({ blockedTopics, outOfScopeReply: reply })).toBe(
+    expect(validateGuardrails({ blockedTopics, outOfScopeReply: reply, handoffReply })).toBe(
       "Cada tema puede tener hasta 120 caracteres.",
     );
   });
 
   it("requires a reply, because a blocked topic always answers something", () => {
-    expect(validateGuardrails({ blockedTopics: ["dosis"], outOfScopeReply: "   " })).toBe(
+    expect(validateGuardrails({ blockedTopics: ["dosis"], outOfScopeReply: "   ", handoffReply })).toBe(
       "Escribe qué responde tu asistente cuando no puede hablar de un tema.",
     );
+  });
+
+  it("requires the handoff reply, because the customer is told something when it happens", () => {
+    expect(validateGuardrails({ blockedTopics: [], outOfScopeReply: reply, handoffReply: "   " })).toBe(
+      "Escribe qué le responde tu asistente cuando la conversación pasa a tu equipo.",
+    );
+  });
+
+  it("rejects a handoff reply longer than the API allows", () => {
+    expect(
+      validateGuardrails({ blockedTopics: [], outOfScopeReply: reply, handoffReply: "x".repeat(501) }),
+    ).toBe("La frase para pasar la conversación puede tener hasta 500 caracteres.");
   });
 
   it("rejects a reply longer than the API allows", () => {
     const outOfScopeReply = "x".repeat(OUT_OF_SCOPE_REPLY_MAX_LENGTH + 1);
 
-    expect(validateGuardrails({ blockedTopics: [], outOfScopeReply })).toBe(
+    expect(validateGuardrails({ blockedTopics: [], outOfScopeReply, handoffReply })).toBe(
       "La respuesta puede tener hasta 500 caracteres.",
     );
   });

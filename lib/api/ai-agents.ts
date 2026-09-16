@@ -26,6 +26,7 @@ export const AGENT_INSTRUCTIONS_MAX_LENGTH = 8_000;
 export const BLOCKED_TOPICS_MAX = 50;
 export const BLOCKED_TOPIC_MAX_LENGTH = 120;
 export const OUT_OF_SCOPE_REPLY_MAX_LENGTH = 500;
+export const HANDOFF_REPLY_MAX_LENGTH = 500;
 
 /**
  * What the assistant refuses to talk about, and what it answers instead. Unlike the rest of
@@ -35,6 +36,8 @@ export const OUT_OF_SCOPE_REPLY_MAX_LENGTH = 500;
 export type AgentGuardrails = {
   blockedTopics: string[];
   outOfScopeReply: string;
+  /** What the customer reads when the conversation leaves the assistant for the team. */
+  handoffReply: string;
 };
 
 export const WEEK_DAYS = [
@@ -210,6 +213,12 @@ export function validateGuardrails(guardrails: AgentGuardrails): string | null {
   }
   if (guardrails.outOfScopeReply.length > OUT_OF_SCOPE_REPLY_MAX_LENGTH) {
     return `La respuesta puede tener hasta ${OUT_OF_SCOPE_REPLY_MAX_LENGTH} caracteres.`;
+  }
+  if (guardrails.handoffReply.trim().length === 0) {
+    return "Escribe qué le responde tu asistente cuando la conversación pasa a tu equipo.";
+  }
+  if (guardrails.handoffReply.length > HANDOFF_REPLY_MAX_LENGTH) {
+    return `La frase para pasar la conversación puede tener hasta ${HANDOFF_REPLY_MAX_LENGTH} caracteres.`;
   }
   return null;
 }

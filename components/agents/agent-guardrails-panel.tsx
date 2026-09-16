@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   BLOCKED_TOPICS_MAX,
   BLOCKED_TOPIC_MAX_LENGTH,
+  HANDOFF_REPLY_MAX_LENGTH,
   OUT_OF_SCOPE_REPLY_MAX_LENGTH,
   saveAgentGuardrails,
   validateGuardrails,
@@ -26,6 +27,7 @@ export type AgentGuardrailsPanelProps = {
 function isSame(a: AgentGuardrails, b: AgentGuardrails): boolean {
   return (
     a.outOfScopeReply === b.outOfScopeReply &&
+    a.handoffReply === b.handoffReply &&
     a.blockedTopics.length === b.blockedTopics.length &&
     a.blockedTopics.every((topic, index) => topic === b.blockedTopics[index])
   );
@@ -40,10 +42,15 @@ export function AgentGuardrailsPanel({
   const { notify } = useToast();
   const [topics, setTopics] = useState<string[]>(guardrails.blockedTopics);
   const [reply, setReply] = useState(guardrails.outOfScopeReply);
+  const [handoff, setHandoff] = useState(guardrails.handoffReply);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const current: AgentGuardrails = { blockedTopics: topics, outOfScopeReply: reply };
+  const current: AgentGuardrails = {
+    blockedTopics: topics,
+    outOfScopeReply: reply,
+    handoffReply: handoff,
+  };
   const dirty = !isSame(current, guardrails);
 
   const save = async () => {
@@ -58,6 +65,7 @@ export function AgentGuardrailsPanel({
       const saved = await saveAgentGuardrails(tenantId, agentId, current);
       setTopics(saved.guardrails.blockedTopics);
       setReply(saved.guardrails.outOfScopeReply);
+      setHandoff(saved.guardrails.handoffReply);
       onSaved(saved);
       notify("Listo. Tu asistente ya respeta estos límites.", "success");
     } catch (caught) {
@@ -91,13 +99,27 @@ export function AgentGuardrailsPanel({
       <Textarea
         name="outOfScopeReply"
         label="¿Qué responde cuando no puede hablar de eso?"
-        hint="Lo lee tu cliente tal cual, así que escríbelo con la voz de tu negocio."
+        hint="Lo lee tu cliente tal cual. Después, la conversación queda para tu equipo."
         value={reply}
         maxLength={OUT_OF_SCOPE_REPLY_MAX_LENGTH}
         rows={3}
         disabled={saving}
         onChange={(event) => {
           setReply(event.target.value);
+          setError(null);
+        }}
+      />
+
+      <Textarea
+        name="handoffReply"
+        label="¿Qué le responde cuando pasa la conversación a tu equipo?"
+        hint="Pasa cuando tu cliente pide hablar con una persona o se nota molesto. No le prometas un tiempo de respuesta que no puedas cumplir."
+        value={handoff}
+        maxLength={HANDOFF_REPLY_MAX_LENGTH}
+        rows={3}
+        disabled={saving}
+        onChange={(event) => {
+          setHandoff(event.target.value);
           setError(null);
         }}
       />

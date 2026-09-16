@@ -21,7 +21,7 @@ function newAgent(): Record<string, unknown> {
     instructions: "",
     style: { formality: "Balanced", verbosity: "Balanced", energy: "Balanced" },
     tools: [],
-    guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+    guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo.", handoffReply: "Listo: dejo de responderte yo y la conversación queda para alguien del equipo." },
     businessHours: null,
     isEnabled: false,
     hasUnpublishedChanges: false,

@@ -17,6 +17,7 @@ const tenantId = "11111111-1111-4111-8111-111111111111";
 const guardrails: AgentGuardrails = {
   blockedTopics: ["dosis"],
   outOfScopeReply: "Eso lo ve alguien del equipo.",
+  handoffReply: "Listo: dejo de responderte yo y la conversación queda para alguien del equipo.",
 };
 
 function renderPanel(overrides: Partial<AgentGuardrails> = {}) {
@@ -64,7 +65,10 @@ describe("AgentGuardrailsPanel", () => {
 
   it("sends both fields together and reports back the saved agent", async () => {
     const user = userEvent.setup();
-    const saved = { id: "a1", guardrails: { blockedTopics: ["dosis", "descuento"], outOfScopeReply: guardrails.outOfScopeReply } } as AiAgent;
+    const saved = {
+      id: "a1",
+      guardrails: { ...guardrails, blockedTopics: ["dosis", "descuento"] },
+    } as AiAgent;
     saveAgentGuardrails.mockResolvedValue(saved);
     const { onSaved } = renderPanel();
 
@@ -75,6 +79,7 @@ describe("AgentGuardrailsPanel", () => {
       expect(saveAgentGuardrails).toHaveBeenCalledWith(tenantId, "a1", {
         blockedTopics: ["dosis", "descuento"],
         outOfScopeReply: guardrails.outOfScopeReply,
+        handoffReply: guardrails.handoffReply,
       }),
     );
     expect(onSaved).toHaveBeenCalledWith(saved);
@@ -105,6 +110,41 @@ describe("AgentGuardrailsPanel", () => {
       await screen.findByText("No pudimos conectar con el servidor. Revisa tu conexión."),
     ).toBeInTheDocument();
     expect(screen.getByText("descuento")).toBeInTheDocument();
+  });
+
+  it("lets the owner write what the customer reads when the team takes over", async () => {
+    const user = userEvent.setup();
+    saveAgentGuardrails.mockResolvedValue({
+      id: "a1",
+      guardrails: { ...guardrails, handoffReply: "Te escribe alguien del equipo." },
+    } as AiAgent);
+    renderPanel();
+
+    const field = screen.getByLabelText(/pasa la conversación a tu equipo/);
+    expect(field).toHaveValue(guardrails.handoffReply);
+
+    await user.clear(field);
+    await user.type(field, "Te escribe alguien del equipo.");
+    await user.click(screen.getByRole("button", { name: "Guardar límites" }));
+
+    await waitFor(() =>
+      expect(saveAgentGuardrails).toHaveBeenCalledWith(tenantId, "a1", {
+        ...guardrails,
+        handoffReply: "Te escribe alguien del equipo.",
+      }),
+    );
+  });
+
+  it("warns that the owner must not promise a response time", () => {
+    renderPanel();
+
+    expect(screen.getByText(/No le prometas un tiempo de respuesta/)).toBeInTheDocument();
+  });
+
+  it("says a blocked topic also hands the conversation to the team", () => {
+    renderPanel();
+
+    expect(screen.getByText(/Después, la conversación queda para tu equipo\./)).toBeInTheDocument();
   });
 
   it("never shows model jargon", () => {
