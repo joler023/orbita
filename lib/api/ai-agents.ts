@@ -23,6 +23,19 @@ export const DEFAULT_AGENT_STYLE: AgentStyle = {
 export const AGENT_NAME_MAX_LENGTH = 120;
 export const AGENT_PERSONALITY_MAX_LENGTH = 2_000;
 export const AGENT_INSTRUCTIONS_MAX_LENGTH = 8_000;
+export const BLOCKED_TOPICS_MAX = 50;
+export const BLOCKED_TOPIC_MAX_LENGTH = 120;
+export const OUT_OF_SCOPE_REPLY_MAX_LENGTH = 500;
+
+/**
+ * What the assistant refuses to talk about, and what it answers instead. Unlike the rest of
+ * the form this is not a draft: it applies the moment it is saved, because a topic the owner
+ * wants off the table cannot wait for a publish.
+ */
+export type AgentGuardrails = {
+  blockedTopics: string[];
+  outOfScopeReply: string;
+};
 
 export type AiAgentDraft = {
   name: string;
@@ -40,6 +53,7 @@ export type AiAgent = {
   instructions: string;
   style: AgentStyle;
   tools: string[];
+  guardrails: AgentGuardrails;
   isEnabled: boolean;
   hasUnpublishedChanges: boolean;
   draft: AiAgentDraft | null;
@@ -111,6 +125,38 @@ export function setAiAgentEnabled(
     method: "PATCH",
     body: JSON.stringify({ isEnabled }),
   });
+}
+
+/** Applies immediately, like the on/off switch — it never waits for a publish. */
+export function saveAgentGuardrails(
+  tenantId: string,
+  agentId: string,
+  body: AgentGuardrails,
+): Promise<AiAgent> {
+  return apiRequest<AiAgent>(`${agentsPath(tenantId)}/${agentId}/guardrails`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Mirrors what the API enforces, so the owner is told before the request leaves rather than
+ * by a 400. Returns the reason in Spanish, or null when there is nothing to fix.
+ */
+export function validateGuardrails(guardrails: AgentGuardrails): string | null {
+  if (guardrails.blockedTopics.length > BLOCKED_TOPICS_MAX) {
+    return `Puedes indicar hasta ${BLOCKED_TOPICS_MAX} temas.`;
+  }
+  if (guardrails.blockedTopics.some((topic) => topic.length > BLOCKED_TOPIC_MAX_LENGTH)) {
+    return `Cada tema puede tener hasta ${BLOCKED_TOPIC_MAX_LENGTH} caracteres.`;
+  }
+  if (guardrails.outOfScopeReply.trim().length === 0) {
+    return "Escribe qué responde tu asistente cuando no puede hablar de un tema.";
+  }
+  if (guardrails.outOfScopeReply.length > OUT_OF_SCOPE_REPLY_MAX_LENGTH) {
+    return `La respuesta puede tener hasta ${OUT_OF_SCOPE_REPLY_MAX_LENGTH} caracteres.`;
+  }
+  return null;
 }
 
 export function deleteAiAgent(tenantId: string, agentId: string): Promise<void> {
