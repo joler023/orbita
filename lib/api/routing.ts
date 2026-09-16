@@ -3,6 +3,7 @@ import { apiRequest } from "./client";
 
 export const ROUTING_RULES_MAX = 50;
 export const ROUTING_RULE_NAME_MAX_LENGTH = 120;
+export const ROUTING_RULE_KEYWORD_MAX_LENGTH = 120;
 
 /**
  * Who takes a conversation. Rules are evaluated in array order and the first match wins, so
@@ -71,6 +72,12 @@ export function validateRoutingRules(rules: ReadonlyArray<RoutingRule>): string 
   const tooLong = rules.find((rule) => rule.name.length > ROUTING_RULE_NAME_MAX_LENGTH);
   if (tooLong) {
     return `Los nombres pueden tener hasta ${ROUTING_RULE_NAME_MAX_LENGTH} caracteres.`;
+  }
+  const longKeyword = rules.findIndex(
+    (rule) => (rule.keyword?.length ?? 0) > ROUTING_RULE_KEYWORD_MAX_LENGTH,
+  );
+  if (longKeyword >= 0) {
+    return `La palabra de la regla ${longKeyword + 1} puede tener hasta ${ROUTING_RULE_KEYWORD_MAX_LENGTH} caracteres.`;
   }
   return null;
 }

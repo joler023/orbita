@@ -11,6 +11,8 @@ import { toUserMessage } from "@/lib/api/errors";
 import {
   indexOfRuleThatSwallowsTheRest,
   listRoutingRules,
+  ROUTING_RULE_KEYWORD_MAX_LENGTH,
+  ROUTING_RULE_NAME_MAX_LENGTH,
   ROUTING_RULES_MAX,
   saveRoutingRules,
   validateRoutingRules,
@@ -170,6 +172,7 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
                   <Input
                     aria-label={`Nombre de la regla ${index + 1}`}
                     placeholder="Por ejemplo: pedidos por WhatsApp"
+                    maxLength={ROUTING_RULE_NAME_MAX_LENGTH}
                     value={rule.name}
                     disabled={saving}
                     onChange={(event) => update(index, { name: event.target.value })}
@@ -234,6 +237,7 @@ export function RoutingRulesPanel({ tenantId, agents }: RoutingRulesPanelProps) 
                     type="text"
                     className={selectClass}
                     placeholder="cualquier cosa"
+                    maxLength={ROUTING_RULE_KEYWORD_MAX_LENGTH}
                     value={rule.keyword ?? ""}
                     disabled={saving}
                     onChange={(event) =>

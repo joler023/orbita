@@ -71,6 +71,12 @@ describe("validateRoutingRules", () => {
     );
   });
 
+  it("refuses a keyword longer than the API allows, naming the rule", () => {
+    expect(validateRoutingRules([rule(), rule({ keyword: "x".repeat(121) })])).toBe(
+      "La palabra de la regla 2 puede tener hasta 120 caracteres.",
+    );
+  });
+
   it("refuses more rules than the API allows", () => {
     const tooMany = Array.from({ length: ROUTING_RULES_MAX + 1 }, () => rule());
 
