@@ -21,6 +21,8 @@ const TITLE_COPY: Record<string, string> = {
   Forbidden: "No tienes permiso para esta acción.",
   "AI agent not found": "Ese asistente ya no existe. Puede que alguien lo haya eliminado.",
   "Cannot delete last agent": "No puedes eliminar tu único asistente. Pausa el asistente si no quieres que responda.",
+  // Keyed by title on purpose: the API pins this title so renaming it cannot degrade the copy.
+  "Too many test cases": "Este asistente ya tiene 20 casos de prueba guardados. Elimina alguno para guardar otro.",
   "Assistant has history":
     "Este asistente ya atendió conversaciones, así que no puedes eliminarlo. Ponlo en pausa si no quieres que siga respondiendo.",
   "Knowledge document not found": "Ese documento ya no existe. Recarga la lista.",

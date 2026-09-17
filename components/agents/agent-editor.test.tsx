@@ -34,7 +34,8 @@ const agent: AiAgent = {
   hasUnpublishedChanges: false,
   draft: null,
   tools: [],
-  guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo." },
+  guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo.", handoffReply: "Listo: dejo de responderte yo y la conversación queda para alguien del equipo." },
+  businessHours: null,
   isEnabled: false,
   conversationCount: 0,
   createdAt: "2026-09-11T12:00:00+00:00",
@@ -77,26 +78,41 @@ describe("AgentEditor", () => {
     discardAiAgentDraft.mockReset();
   });
 
-  it("offers limits only once the agent exists, like knowledge and tests", () => {
+  it("offers schedule and limits only once the agent exists, like knowledge and tests", () => {
     renderEditor({ agent: null });
+    expect(screen.queryByRole("tab", { name: "Horario" })).not.toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Límites" })).not.toBeInTheDocument();
 
     cleanup();
     renderEditor();
+    expect(screen.getByRole("tab", { name: "Horario" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Límites" })).toBeInTheDocument();
   });
 
-  it("hides the publish footer on limits, which save on their own", async () => {
+  it.each([
+    ["Horario", "Guardar horario"],
+    ["Límites", "Guardar límites"],
+  ])("hides the publish footer on %s, which saves on its own", async (tab, ownSave) => {
     const user = userEvent.setup();
     renderEditor();
 
     expect(screen.getByRole("button", { name: "Publicar" })).toBeVisible();
 
-    await user.click(screen.getByRole("tab", { name: "Límites" }));
+    await user.click(screen.getByRole("tab", { name: tab }));
 
     // Hidden, not just invisible: a screen reader must not offer two different saves either.
     expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Guardar límites" })).toBeVisible();
+    expect(screen.getByRole("button", { name: ownSave })).toBeVisible();
+  });
+
+  it("marks the tab the panel actually belongs to", async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.click(screen.getByRole("tab", { name: "Respuestas repetidas" }));
+
+    expect(screen.getByRole("tab", { name: "Respuestas repetidas" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Instrucciones" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("saving leaves the change unpublished and says so", async () => {

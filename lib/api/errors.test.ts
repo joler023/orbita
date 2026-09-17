@@ -20,6 +20,14 @@ describe("toUserMessage", () => {
     );
   });
 
+  it("says what to do when an assistant already has every test case it can keep", () => {
+    const message = toUserMessage(new ApiError(409, "Too many test cases", "no"));
+    expect(message).toBe(
+      "Este asistente ya tiene 20 casos de prueba guardados. Elimina alguno para guardar otro.",
+    );
+    expect(message).not.toMatch(/int[ée]ntalo de nuevo/i);
+  });
+
   it("tells the owner to pause instead of retrying when the assistant has history", () => {
     const message = toUserMessage(new ApiError(409, "Assistant has history", "no"));
     expect(message).toBe(

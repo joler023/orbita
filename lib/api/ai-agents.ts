@@ -26,6 +26,7 @@ export const AGENT_INSTRUCTIONS_MAX_LENGTH = 8_000;
 export const BLOCKED_TOPICS_MAX = 50;
 export const BLOCKED_TOPIC_MAX_LENGTH = 120;
 export const OUT_OF_SCOPE_REPLY_MAX_LENGTH = 500;
+export const HANDOFF_REPLY_MAX_LENGTH = 500;
 
 /**
  * What the assistant refuses to talk about, and what it answers instead. Unlike the rest of
@@ -35,6 +36,41 @@ export const OUT_OF_SCOPE_REPLY_MAX_LENGTH = 500;
 export type AgentGuardrails = {
   blockedTopics: string[];
   outOfScopeReply: string;
+  /** What the customer reads when the conversation leaves the assistant for the team. */
+  handoffReply: string;
+};
+
+export const WEEK_DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+export type WeekDay = (typeof WEEK_DAYS)[number];
+
+export const BUSINESS_HOURS_SLOTS_MAX = 21;
+
+/** One stretch of a single day, in the organization's own time zone. Never crosses midnight. */
+export type BusinessHoursSlot = {
+  day: WeekDay;
+  /** "HH:mm:ss" local time. */
+  opens: string;
+  closes: string;
+};
+
+export type OutsideHours = "AssistantAnswers" | "LeaveForTeam";
+
+/**
+ * When the business is open, and what the assistant does the rest of the time. A null
+ * schedule means the assistant is on duty around the clock, which is the default.
+ */
+export type BusinessHours = {
+  slots: BusinessHoursSlot[];
+  outsideHours: OutsideHours;
 };
 
 export type AiAgentDraft = {
@@ -54,6 +90,7 @@ export type AiAgent = {
   style: AgentStyle;
   tools: string[];
   guardrails: AgentGuardrails;
+  businessHours: BusinessHours | null;
   isEnabled: boolean;
   hasUnpublishedChanges: boolean;
   draft: AiAgentDraft | null;
@@ -146,6 +183,21 @@ export function saveAgentGuardrails(
 }
 
 /**
+ * Applies immediately too. Null puts the assistant on duty at all hours; a schedule with no
+ * slots is refused by the API, because it would silence the assistant for good.
+ */
+export function saveBusinessHours(
+  tenantId: string,
+  agentId: string,
+  businessHours: BusinessHours | null,
+): Promise<AiAgent> {
+  return apiRequest<AiAgent>(`${agentsPath(tenantId)}/${agentId}/business-hours`, {
+    method: "PUT",
+    body: JSON.stringify({ businessHours }),
+  });
+}
+
+/**
  * Mirrors what the API enforces, so the owner is told before the request leaves rather than
  * by a 400. Returns the reason in Spanish, or null when there is nothing to fix.
  */
@@ -161,6 +213,12 @@ export function validateGuardrails(guardrails: AgentGuardrails): string | null {
   }
   if (guardrails.outOfScopeReply.length > OUT_OF_SCOPE_REPLY_MAX_LENGTH) {
     return `La respuesta puede tener hasta ${OUT_OF_SCOPE_REPLY_MAX_LENGTH} caracteres.`;
+  }
+  if (guardrails.handoffReply.trim().length === 0) {
+    return "Escribe qué le responde tu asistente cuando la conversación pasa a tu equipo.";
+  }
+  if (guardrails.handoffReply.length > HANDOFF_REPLY_MAX_LENGTH) {
+    return `La frase para pasar la conversación puede tener hasta ${HANDOFF_REPLY_MAX_LENGTH} caracteres.`;
   }
   return null;
 }
@@ -183,4 +241,41 @@ export function toSaveRequest(agent: AiAgent): SaveAiAgentRequest {
     style: source.style,
     tools: source.tools,
   };
+}
+
+export const SEMANTIC_CACHE_LEVELS = ["Off", "Conservative", "Balanced", "Aggressive"] as const;
+
+export type SemanticCacheLevel = (typeof SEMANTIC_CACHE_LEVELS)[number];
+
+/**
+ * Reusing the previous answer when two customers ask almost the same thing (ORB-C12).
+ *
+ * `hitRate` is null while nobody has asked yet — which is not the same as 0%, and the
+ * screen must not read it as "never works". It is a share between 0 and 1.
+ */
+export type SemanticCache = {
+  level: SemanticCacheLevel;
+  hits: number;
+  misses: number;
+  hitRate: number | null;
+};
+
+function semanticCachePath(tenantId: string, agentId: string): string {
+  return `${agentsPath(tenantId)}/${agentId}/semantic-cache`;
+}
+
+export function getSemanticCache(tenantId: string, agentId: string): Promise<SemanticCache> {
+  return apiRequest<SemanticCache>(semanticCachePath(tenantId, agentId));
+}
+
+/** Applies immediately, like the rest of what limits how the assistant works. */
+export function setSemanticCacheLevel(
+  tenantId: string,
+  agentId: string,
+  level: SemanticCacheLevel,
+): Promise<SemanticCache> {
+  return apiRequest<SemanticCache>(semanticCachePath(tenantId, agentId), {
+    method: "PUT",
+    body: JSON.stringify({ level }),
+  });
 }

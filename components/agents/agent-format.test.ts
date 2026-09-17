@@ -17,6 +17,12 @@ describe("describeToolResult", () => {
     expect(describeToolResult("agenda")).toBeNull();
   });
 
+  it("warns that handed-over conversations wait where nobody can see them yet", () => {
+    expect(describeToolResult("inbox")).toBe(
+      "Las conversaciones que pase a tu equipo quedan esperando, y todavía no puedes verlas desde el panel.",
+    );
+  });
+
   it("warns when the results land on a screen that is not built yet", () => {
     expect(describeToolResult("pipeline")).toBe(
       "Lo que registre aparece en Pipeline, que todavía no puedes abrir desde el panel.",
