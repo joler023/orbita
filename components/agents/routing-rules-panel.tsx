@@ -190,14 +190,15 @@ export function RoutingRulesPanel({ tenantId, agents, onDirtyChange }: RoutingRu
               key={index}
               className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-3"
             >
-              <div className="flex items-start gap-2">
+              {/* Wraps on a phone: the name field takes the row and the actions drop below it. */}
+              <div className="flex flex-wrap items-start gap-2">
                 <span
                   aria-hidden="true"
                   className="mt-1.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-orbita-50 text-xs font-semibold text-orbita-600"
                 >
                   {index + 1}
                 </span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 basis-[calc(100%-2rem)] sm:basis-0 sm:flex-1">
                   <Input
                     aria-label={`Nombre de la regla ${index + 1}`}
                     placeholder="Por ejemplo: pedidos por WhatsApp"
@@ -207,7 +208,7 @@ export function RoutingRulesPanel({ tenantId, agents, onDirtyChange }: RoutingRu
                     onChange={(event) => update(index, { name: event.target.value })}
                   />
                 </div>
-                <div className="flex shrink-0 items-center gap-0.5 pt-1">
+                <div className="ml-auto flex shrink-0 items-center gap-0.5 pt-1">
                   <button
                     type="button"
                     onClick={() => move(index, -1)}

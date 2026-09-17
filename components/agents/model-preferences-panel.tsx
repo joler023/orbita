@@ -183,8 +183,9 @@ export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) 
               </div>
               <p className="text-xs text-muted">{TASK_COPY[task].description}</p>
 
+              {/* On a phone the id needs the whole row: a truncated model id is unreadable. */}
               <div className="flex flex-wrap items-end gap-2">
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                   <Input
                     aria-label={`Modelo para ${TASK_COPY[task].title.toLowerCase()}`}
                     value={draft}
