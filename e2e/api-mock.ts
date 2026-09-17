@@ -236,6 +236,14 @@ export async function mockOrbitaApi(
       return;
     }
 
+    if (url.pathname === "/api/ai-providers" && method === "GET") {
+      await json(route, [
+        { name: "openai-compatible", displayName: "OpenRouter", isConfigured: true, isPrimary: true },
+        { name: "ollama", displayName: "Ollama", isConfigured: false, isPrimary: false },
+      ]);
+      return;
+    }
+
     if (url.pathname.startsWith(`/api/tenants/${TENANT_ID}/ai-models/`)) {
       if (method === "GET") {
         await json(route, modelPreferences);

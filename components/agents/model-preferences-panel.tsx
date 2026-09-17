@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,20 +9,23 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast";
 import {
   clearModelPreference,
+  listAiProviders,
   listModelPreferences,
+  primaryProvider,
   LLM_TASKS,
   MODEL_ID_MAX_LENGTH,
   setModelPreference,
   TASK_COPY,
   validateModelId,
+  type AiProvider,
   type LlmTask,
   type ModelPreference,
 } from "@/lib/api/ai-models";
 import { toUserMessage } from "@/lib/api/errors";
-import { RotateCcw } from "lucide-react";
+import { PlugZap, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type LoadState = "loading" | "ready" | "error";
+type LoadState = "loading" | "ready" | "no-provider" | "error";
 
 export type ModelPreferencesPanelProps = {
   tenantId: string;
@@ -30,6 +34,7 @@ export type ModelPreferencesPanelProps = {
 export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) {
   const { notify } = useToast();
   const [state, setState] = useState<LoadState>("loading");
+  const [provider, setProvider] = useState<AiProvider | null>(null);
   const [preferences, setPreferences] = useState<ModelPreference[]>([]);
   const [drafts, setDrafts] = useState<Partial<Record<LlmTask, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<LlmTask, string>>>({});
@@ -38,9 +43,19 @@ export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) 
 
   useEffect(() => {
     let cancelled = false;
-    listModelPreferences(tenantId)
-      .then((result) => {
+    // Model ids belong to a provider, so the screen edits the one answering today.
+    listAiProviders()
+      .then(async (providers) => {
+        const primary = primaryProvider(providers);
+        if (!primary) {
+          if (!cancelled) {
+            setState("no-provider");
+          }
+          return;
+        }
+        const result = await listModelPreferences(tenantId, primary.name);
         if (!cancelled) {
+          setProvider(primary);
           setPreferences(result);
           setDrafts({});
           setState("ready");
@@ -73,7 +88,10 @@ export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) 
     setErrors((current) => ({ ...current, [task]: undefined }));
     setBusyTask(task);
     try {
-      apply(await setModelPreference(tenantId, task, model.trim()));
+      if (!provider) {
+        return;
+      }
+      apply(await setModelPreference(tenantId, provider.name, task, model.trim()));
       notify("Guardamos el cambio. Tu asistente lo usa en la próxima respuesta.", "success");
     } catch (error) {
       notify(toUserMessage(error), "error");
@@ -83,10 +101,13 @@ export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) 
   };
 
   const reset = async (task: LlmTask) => {
+    if (!provider) {
+      return;
+    }
     setBusyTask(task);
     try {
-      await clearModelPreference(tenantId, task);
-      const fresh = await listModelPreferences(tenantId);
+      await clearModelPreference(tenantId, provider.name, task);
+      const fresh = await listModelPreferences(tenantId, provider.name);
       setPreferences(fresh);
       setDrafts((current) => ({ ...current, [task]: undefined }));
       notify("Volvimos al modelo por defecto.", "success");
@@ -103,6 +124,16 @@ export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) 
         <Skeleton className="h-24" />
         <Skeleton className="h-24" />
       </div>
+    );
+  }
+
+  if (state === "no-provider") {
+    return (
+      <EmptyState
+        icon={<PlugZap className="size-8" aria-hidden="true" />}
+        title="No hay ningún proveedor de IA conectado"
+        description="Mientras no haya uno configurado en el servidor, no hay modelos que elegir y tus asistentes no pueden responder. Avísale a quien administra Órbita."
+      />
     );
   }
 
@@ -126,6 +157,12 @@ export function ModelPreferencesPanel({ tenantId }: ModelPreferencesPanelProps) 
         entender el mensaje y uno mejor para escribir la respuesta cuesta bastante menos que usar
         el mejor para todo. Si no eliges nada, se usa el que trae Órbita.
       </p>
+      {provider ? (
+        <p className="-mt-3 text-xs text-muted">
+          Modelos de <span className="font-medium text-foreground">{provider.displayName}</span>, el
+          proveedor que responde hoy.
+        </p>
+      ) : null}
 
       <ul className="flex flex-col gap-3">
         {LLM_TASKS.map((task) => {

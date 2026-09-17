@@ -2,13 +2,27 @@ import { apiRequest } from "./client";
 
 /**
  * Which model serves each task, per organization (ORB-C13). Model ids are not portable
- * between providers, so the provider is part of the route.
- *
- * TODO(ORB-C13): the API has no endpoint that lists the configured providers yet — asked for
- * `GET /api/ai-providers`. Until it exists this is the one the deployment uses; the other
- * registered name is "ollama", left unconfigured.
+ * between providers, so the provider is part of the route. Only the owner may read or change
+ * this: the API enforces it with its own permission, not just the hidden entry.
  */
-export const AI_PROVIDER = "openai-compatible";
+
+/** A model provider the deployment knows. `name` is what goes in the route. */
+export type AiProvider = {
+  name: string;
+  displayName: string;
+  isConfigured: boolean;
+  /** The first configured one, i.e. the one answering today — not merely the first listed. */
+  isPrimary: boolean;
+};
+
+export function listAiProviders(): Promise<AiProvider[]> {
+  return apiRequest<AiProvider[]>("/api/ai-providers");
+}
+
+/** The provider whose models the screen edits, or null when none is configured. */
+export function primaryProvider(providers: ReadonlyArray<AiProvider>): AiProvider | null {
+  return providers.find((provider) => provider.isPrimary && provider.isConfigured) ?? null;
+}
 
 export const LLM_TASKS = ["Classify", "Draft", "Embed"] as const;
 
@@ -27,18 +41,15 @@ function modelsPath(tenantId: string, provider: string): string {
   return `/api/tenants/${tenantId}/ai-models/${provider}`;
 }
 
-export function listModelPreferences(
-  tenantId: string,
-  provider: string = AI_PROVIDER,
-): Promise<ModelPreference[]> {
+export function listModelPreferences(tenantId: string, provider: string): Promise<ModelPreference[]> {
   return apiRequest<ModelPreference[]>(modelsPath(tenantId, provider));
 }
 
 export function setModelPreference(
   tenantId: string,
+  provider: string,
   task: LlmTask,
   model: string,
-  provider: string = AI_PROVIDER,
 ): Promise<ModelPreference> {
   return apiRequest<ModelPreference>(`${modelsPath(tenantId, provider)}/${task}`, {
     method: "PUT",
@@ -47,11 +58,7 @@ export function setModelPreference(
 }
 
 /** Back to the deployment default. Clearing something already absent is not an error. */
-export function clearModelPreference(
-  tenantId: string,
-  task: LlmTask,
-  provider: string = AI_PROVIDER,
-): Promise<void> {
+export function clearModelPreference(tenantId: string, provider: string, task: LlmTask): Promise<void> {
   return apiRequest<void>(`${modelsPath(tenantId, provider)}/${task}`, { method: "DELETE" });
 }
 
