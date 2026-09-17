@@ -162,6 +162,21 @@ nuevo», que en este caso es el consejo correcto.
 - Barra superior de Figma (selector de asistente con Guardar y Publicar arriba); hoy esos botones están al pie del editor.
 - Pulgar arriba/abajo de `ai_feedback`: el modelo de datos lo pide y ninguna historia lo recoge.
 
+## Revisado en celular (390 px)
+
+Las doce pantallas de Track C se recorrieron a ancho de teléfono. La Guía acepta que sean
+incómodas ahí —solo bandeja, conversación, tablero y notificaciones tienen que estar bien— pero
+ninguna puede quedar rota, así que `e2e/celular.spec.ts` recorre todas y **falla si la página se
+sale a lo ancho**, que es en lo que termina un diseño apretado.
+
+Se corrigieron dos: en Reglas de asignación y en Modelos de IA el campo de texto compartía fila
+con los botones y quedaba cortado (un identificador de modelo truncado es ilegible). Ahora el
+campo ocupa toda la fila por debajo de 640 px y los botones bajan.
+
+Queda incómodo y se acepta: con siete pestañas, la tira del editor se desplaza en horizontal y en
+un teléfono solo se ven tres a la vez. El componente `Tabs` es compartido con otros tracks, así
+que cambiarlo se acuerda antes.
+
 ## Huecos de backlog sin dueño
 
 - ~~La cola de traspasos no tiene pantalla~~ — **construida** como entrada propia dentro de Agente IA, sin tocar `/bandeja`, que es de Track B. Si esa bandeja la incorpora después, esta vista se retira.
