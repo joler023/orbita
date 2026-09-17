@@ -11,17 +11,23 @@ import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { deleteAiAgent, listAiAgents, setAiAgentEnabled, type AiAgent } from "@/lib/api/ai-agents";
 import { ApiError, toUserMessage } from "@/lib/api/errors";
-import { Bot, Plus, Split } from "lucide-react";
+import { Bot, Inbox, Plus, Split } from "lucide-react";
+import { useMembership } from "@/lib/session/current-user";
 import { useEffect, useState, type ReactNode } from "react";
 import { AgentEditor } from "./agent-editor";
 import { formatAgentsMeta } from "./agent-format";
 import { AgentHeader } from "./agent-header";
 import { AgentList } from "./agent-list";
+import { HandoffQueuePanel } from "./handoff-queue-panel";
 import { RoutingRulesPanel } from "./routing-rules-panel";
 
 type LoadState = "loading" | "ready" | "forbidden" | "error";
 
-type Selection = { kind: "agent"; id: string } | { kind: "new" } | { kind: "rules" };
+type Selection =
+  | { kind: "agent"; id: string }
+  | { kind: "new" }
+  | { kind: "rules" }
+  | { kind: "handoffs" };
 
 export type AgentsWorkspaceProps = {
   tenantId: string;
@@ -29,6 +35,8 @@ export type AgentsWorkspaceProps = {
 
 export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   const { notify } = useToast();
+  // Hiding the button is not the control: the API answers 403 to a Viewer either way.
+  const canReturnHandoffs = useMembership(tenantId)?.role !== "Viewer";
   const [state, setState] = useState<LoadState>("loading");
   const [agents, setAgents] = useState<AiAgent[]>([]);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -172,7 +180,22 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   }
 
   let detail: ReactNode = null;
-  if (selection?.kind === "rules") {
+  if (selection?.kind === "handoffs") {
+    detail = (
+      <section
+        aria-label="Conversaciones en espera"
+        className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5"
+      >
+        <header className="border-b border-border pb-4">
+          <h2 className="text-lg font-semibold text-foreground">Conversaciones en espera</h2>
+          <p className="text-sm text-muted">
+            Las que tu asistente dejó para una persona de tu equipo.
+          </p>
+        </header>
+        <HandoffQueuePanel tenantId={tenantId} canReturn={canReturnHandoffs} />
+      </section>
+    );
+  } else if (selection?.kind === "rules") {
     detail = (
       <section
         aria-label="Reglas de asignación"
@@ -257,6 +280,20 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
               >
                 Nuevo asistente
               </Button>
+              <button
+                type="button"
+                aria-current={selection?.kind === "handoffs" ? "true" : undefined}
+                onClick={() => select({ kind: "handoffs" })}
+                className={cn(
+                  "mt-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbita-500",
+                  selection?.kind === "handoffs"
+                    ? "border-orbita-600 bg-orbita-50 font-medium text-foreground"
+                    : "border-border bg-surface text-muted hover:bg-background hover:text-foreground",
+                )}
+              >
+                <Inbox className="size-4 shrink-0" aria-hidden="true" />
+                Conversaciones en espera
+              </button>
               <button
                 type="button"
                 aria-current={selection?.kind === "rules" ? "true" : undefined}

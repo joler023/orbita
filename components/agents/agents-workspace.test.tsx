@@ -1,4 +1,5 @@
 import { ToastProvider } from "@/components/ui/toast";
+import { CurrentUserProvider } from "@/lib/session/current-user";
 import type { AiAgent } from "@/lib/api/ai-agents";
 import { ApiError } from "@/lib/api/errors";
 import { render, screen, within } from "@testing-library/react";
@@ -25,6 +26,13 @@ vi.mock("@/lib/api/ai-agents", async () => ({
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
 
+const currentUser = {
+  userId: "u1",
+  email: "ana@orbita.test",
+  fullName: "Ana Pérez",
+  memberships: [{ tenantId, slug: "negocio", name: "Negocio", role: "Owner" as const }],
+};
+
 function agent(overrides: Partial<AiAgent> = {}): AiAgent {
   return {
     id: "a1",
@@ -47,7 +55,9 @@ function agent(overrides: Partial<AiAgent> = {}): AiAgent {
 function renderWorkspace() {
   return render(
     <ToastProvider>
-      <AgentsWorkspace tenantId={tenantId} />
+      <CurrentUserProvider user={currentUser}>
+        <AgentsWorkspace tenantId={tenantId} />
+      </CurrentUserProvider>
     </ToastProvider>,
   );
 }
