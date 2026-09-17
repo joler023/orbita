@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { deleteAiAgent, listAiAgents, setAiAgentEnabled, type AiAgent } from "@/lib/api/ai-agents";
 import { ApiError, toUserMessage } from "@/lib/api/errors";
-import { Bot, Inbox, Plus, Split } from "lucide-react";
+import { Bot, Cpu, Inbox, Plus, Split } from "lucide-react";
 import { useMembership } from "@/lib/session/current-user";
 import { useEffect, useState, type ReactNode } from "react";
 import { AgentEditor } from "./agent-editor";
@@ -19,6 +19,7 @@ import { formatAgentsMeta } from "./agent-format";
 import { AgentHeader } from "./agent-header";
 import { AgentList } from "./agent-list";
 import { HandoffQueuePanel } from "./handoff-queue-panel";
+import { ModelPreferencesPanel } from "./model-preferences-panel";
 import { RoutingRulesPanel } from "./routing-rules-panel";
 
 type LoadState = "loading" | "ready" | "forbidden" | "error";
@@ -27,7 +28,8 @@ type Selection =
   | { kind: "agent"; id: string }
   | { kind: "new" }
   | { kind: "rules" }
-  | { kind: "handoffs" };
+  | { kind: "handoffs" }
+  | { kind: "models" };
 
 export type AgentsWorkspaceProps = {
   tenantId: string;
@@ -36,7 +38,11 @@ export type AgentsWorkspaceProps = {
 export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   const { notify } = useToast();
   // Hiding the button is not the control: the API answers 403 to a Viewer either way.
-  const canReturnHandoffs = useMembership(tenantId)?.role !== "Viewer";
+  const role = useMembership(tenantId)?.role;
+  const canReturnHandoffs = role !== "Viewer";
+  // Only the owner: this changes what the organization is billed, not just how it answers.
+  // The API is asked to enforce the same — hiding an entry is not access control (ORB-A08).
+  const isOwner = role === "Owner";
   const [state, setState] = useState<LoadState>("loading");
   const [agents, setAgents] = useState<AiAgent[]>([]);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -180,7 +186,22 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
   }
 
   let detail: ReactNode = null;
-  if (selection?.kind === "handoffs") {
+  if (selection?.kind === "models" && isOwner) {
+    detail = (
+      <section
+        aria-label="Modelos de IA"
+        className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5"
+      >
+        <header className="border-b border-border pb-4">
+          <h2 className="text-lg font-semibold text-foreground">Modelos de IA</h2>
+          <p className="text-sm text-muted">
+            Ajuste avanzado de la organización. Cambia el costo y la calidad de todas las respuestas.
+          </p>
+        </header>
+        <ModelPreferencesPanel tenantId={tenantId} />
+      </section>
+    );
+  } else if (selection?.kind === "handoffs") {
     detail = (
       <section
         aria-label="Conversaciones en espera"
@@ -308,6 +329,22 @@ export function AgentsWorkspace({ tenantId }: AgentsWorkspaceProps) {
                 <Split className="size-4 shrink-0" aria-hidden="true" />
                 Reglas de asignación
               </button>
+              {isOwner ? (
+                <button
+                  type="button"
+                  aria-current={selection?.kind === "models" ? "true" : undefined}
+                  onClick={() => select({ kind: "models" })}
+                  className={cn(
+                    "mt-1 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orbita-500",
+                    selection?.kind === "models"
+                      ? "border-orbita-600 bg-orbita-50 font-medium text-foreground"
+                      : "border-border bg-surface text-muted hover:bg-background hover:text-foreground",
+                  )}
+                >
+                  <Cpu className="size-4 shrink-0" aria-hidden="true" />
+                  Modelos de IA
+                </button>
+              ) : null}
             </>
           }
         />
