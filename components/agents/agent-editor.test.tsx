@@ -105,6 +105,16 @@ describe("AgentEditor", () => {
     expect(screen.getByRole("button", { name: ownSave })).toBeVisible();
   });
 
+  it("marks the tab the panel actually belongs to", async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.click(screen.getByRole("tab", { name: "Respuestas repetidas" }));
+
+    expect(screen.getByRole("tab", { name: "Respuestas repetidas" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Instrucciones" })).toHaveAttribute("aria-selected", "false");
+  });
+
   it("saving leaves the change unpublished and says so", async () => {
     const user = userEvent.setup();
     const withDraft: AiAgent = {

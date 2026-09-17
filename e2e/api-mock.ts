@@ -62,7 +62,36 @@ export async function mockOrbitaApi(
   let agents: Array<Record<string, unknown>> = [];
   let documents: Array<Record<string, unknown>> = [];
   let routingRules: Array<Record<string, unknown>> = [];
+  let semanticCache: Record<string, unknown> = { level: "Balanced", hits: 18, misses: 54, hitRate: 0.25 };
   let testCases: Array<Record<string, unknown>> = [];
+  const handoffs = [
+    {
+      conversationId: "h1",
+      contactId: "k1",
+      contactName: "Laura Gómez",
+      reason: "CustomerAsked",
+      requestedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+      summary:
+        "El cliente pidió una torta para el sábado y recibió una diferente. Quiere hablar con alguien para resolverlo.",
+      lastMessageAt: new Date().toISOString(),
+      lastMessagePreview: "Listo: dejo de responderte yo.",
+    },
+    {
+      conversationId: "h2",
+      contactId: "k2",
+      contactName: "Iván Restrepo",
+      reason: "OutOfScopeTopic",
+      requestedAt: new Date(Date.now() - 3 * 60 * 60_000).toISOString(),
+      summary: null,
+      lastMessageAt: new Date().toISOString(),
+      lastMessagePreview: "Listo: dejo de responderte yo.",
+    },
+  ];
+  let modelPreferences = [
+    { task: "Classify", model: "deepseek/deepseek-v4-flash", isTenantOverride: false },
+    { task: "Draft", model: "openai/gpt-5.6-luna", isTenantOverride: true },
+    { task: "Embed", model: "openai/text-embedding-3-small", isTenantOverride: false },
+  ];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -202,6 +231,29 @@ export async function mockOrbitaApi(
       return;
     }
 
+    if (url.pathname === `/api/tenants/${TENANT_ID}/handoffs` && method === "GET") {
+      await json(route, { items: handoffs, nextCursor: null, total: handoffs.length });
+      return;
+    }
+
+    if (url.pathname.startsWith(`/api/tenants/${TENANT_ID}/ai-models/`)) {
+      if (method === "GET") {
+        await json(route, modelPreferences);
+        return;
+      }
+      const task = url.pathname.split("/").pop() ?? "";
+      if (method === "PUT") {
+        const body = request.postDataJSON() as { model: string };
+        modelPreferences = modelPreferences.map((p) =>
+          p.task === task ? { ...p, model: body.model, isTenantOverride: true } : p,
+        );
+        await json(route, modelPreferences.find((p) => p.task === task));
+        return;
+      }
+      await route.fulfill({ status: 204, headers: corsHeaders, body: "" });
+      return;
+    }
+
     const agentsPath = `/api/tenants/${TENANT_ID}/ai-agents`;
 
     if (url.pathname === agentsPath && method === "GET") {
@@ -243,6 +295,14 @@ export async function mockOrbitaApi(
       if (rest === "/business-hours" && method === "PUT") {
         const body = request.postDataJSON() as Record<string, unknown>;
         await json(route, patch({ businessHours: body.businessHours }));
+        return;
+      }
+      if (rest === "/semantic-cache") {
+        if (method === "PUT") {
+          const body = request.postDataJSON() as { level: string };
+          semanticCache = { ...semanticCache, level: body.level };
+        }
+        await json(route, semanticCache);
         return;
       }
       if (rest === "/guardrails" && method === "PUT") {
