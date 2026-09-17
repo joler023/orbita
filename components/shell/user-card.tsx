@@ -1,12 +1,14 @@
 import { initialsFromName } from "@/lib/navigation";
 import type { CurrentUser } from "@/lib/api/auth";
+import type { ReactNode } from "react";
 
 export function UserCard({
   user,
-  organizationName,
+  secondary,
 }: {
   user: Pick<CurrentUser, "email" | "fullName"> | null;
-  organizationName?: string;
+  /** The line under the name. Falls back to the email when there is nothing better to show. */
+  secondary?: ReactNode;
 }) {
   const name = user?.fullName ?? "Cuenta";
   const email = user?.email ?? "";
@@ -21,7 +23,7 @@ export function UserCard({
       </span>
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium text-foreground">{name}</span>
-        <span className="block truncate text-xs text-muted">{organizationName ?? email}</span>
+        {secondary ?? <span className="block truncate text-xs text-muted">{email}</span>}
       </span>
     </div>
   );

@@ -1,16 +1,24 @@
 import { ToastProvider } from "@/components/ui/toast";
-import type { AgentTestResult } from "@/lib/api/agent-test-bench";
+import type { AgentTestCase, AgentTestResult } from "@/lib/api/agent-test-bench";
 import { ApiError } from "@/lib/api/errors";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TestBenchPanel } from "./test-bench-panel";
 
-const { runAgentTest } = vi.hoisted(() => ({ runAgentTest: vi.fn() }));
+const { runAgentTest, listTestCases, saveTestCase, deleteTestCase } = vi.hoisted(() => ({
+  runAgentTest: vi.fn(),
+  listTestCases: vi.fn(),
+  saveTestCase: vi.fn(),
+  deleteTestCase: vi.fn(),
+}));
 
 vi.mock("@/lib/api/agent-test-bench", async () => ({
   ...(await vi.importActual<typeof import("@/lib/api/agent-test-bench")>("@/lib/api/agent-test-bench")),
   runAgentTest: (...args: unknown[]) => runAgentTest(...args),
+  listTestCases: (...args: unknown[]) => listTestCases(...args),
+  saveTestCase: (...args: unknown[]) => saveTestCase(...args),
+  deleteTestCase: (...args: unknown[]) => deleteTestCase(...args),
 }));
 
 const tenantId = "11111111-1111-4111-8111-111111111111";
@@ -46,6 +54,9 @@ function renderPanel() {
 describe("TestBenchPanel", () => {
   beforeEach(() => {
     runAgentTest.mockReset().mockResolvedValue(result());
+    listTestCases.mockReset().mockResolvedValue([]);
+    saveTestCase.mockReset();
+    deleteTestCase.mockReset().mockResolvedValue(undefined);
   });
 
   it("makes it obvious nobody receives these messages", () => {
@@ -116,5 +127,152 @@ describe("TestBenchPanel", () => {
       await screen.findByText("El asistente no pudo responder ahora mismo. Inténtalo de nuevo en un momento."),
     ).toBeInTheDocument();
     expect(field).toHaveValue("¿Tienen envío?");
+  });
+
+  describe("saved test cases", () => {
+    const deliveries: AgentTestCase = {
+      id: "tc1",
+      name: "Domicilios a Belén",
+      messages: [
+        { role: "User", content: "¿hacen domicilios?" },
+        { role: "Assistant", content: "Sí, en Laureles y Belén." },
+        { role: "User", content: "¿cuánto cuesta?" },
+        { role: "Assistant", content: "Cuesta $5.000." },
+      ],
+      createdAt: "2026-09-16T14:57:54.271948+00:00",
+    };
+
+    it("explains what a saved case is for when there are none yet", async () => {
+      renderPanel();
+
+      expect(await screen.findByText(/guárdala como caso para repetirla/i)).toBeInTheDocument();
+    });
+
+    it("cannot save before there is a conversation to keep", () => {
+      renderPanel();
+
+      expect(screen.getByRole("button", { name: "Guardar como caso" })).toBeDisabled();
+    });
+
+    it("saves the conversation under the name the owner gives it", async () => {
+      const user = userEvent.setup();
+      saveTestCase.mockResolvedValue({ ...deliveries, id: "tc9", name: "Envíos" });
+      renderPanel();
+
+      await user.type(screen.getByLabelText("Pregunta de prueba"), "¿Hacen envíos?{Enter}");
+      await screen.findByText("Sí, enviamos a Palmira.");
+      await user.click(screen.getByRole("button", { name: "Guardar como caso" }));
+      await user.type(screen.getByLabelText("¿Cómo lo llamas?"), "Envíos");
+      await user.click(screen.getByRole("button", { name: "Guardar caso" }));
+
+      await waitFor(() =>
+        expect(saveTestCase).toHaveBeenCalledWith(tenantId, "a1", {
+          name: "Envíos",
+          messages: [
+            { role: "User", content: "¿Hacen envíos?" },
+            { role: "Assistant", content: "Sí, enviamos a Palmira." },
+          ],
+        }),
+      );
+      expect(await screen.findByText("Envíos")).toBeInTheDocument();
+    });
+
+    it("asks for a name instead of saving a case nobody will recognise", async () => {
+      const user = userEvent.setup();
+      renderPanel();
+
+      await user.type(screen.getByLabelText("Pregunta de prueba"), "hola{Enter}");
+      await screen.findByText("Sí, enviamos a Palmira.");
+      await user.click(screen.getByRole("button", { name: "Guardar como caso" }));
+      await user.click(screen.getByRole("button", { name: "Guardar caso" }));
+
+      expect(
+        await screen.findByText("Ponle un nombre al caso, para reconocerlo cuando lo vuelvas a probar."),
+      ).toBeInTheDocument();
+      expect(saveTestCase).not.toHaveBeenCalled();
+    });
+
+    it("replays every saved question, threading the new answers as history", async () => {
+      const user = userEvent.setup();
+      listTestCases.mockResolvedValue([deliveries]);
+      runAgentTest
+        .mockResolvedValueOnce(result({ reply: "Sí, en Laureles y Belén." }))
+        .mockResolvedValueOnce(result({ reply: "Cuesta $6.000." }));
+      renderPanel();
+
+      await user.click(await screen.findByRole("button", { name: "Probar de nuevo" }));
+
+      await waitFor(() => expect(runAgentTest).toHaveBeenCalledTimes(2));
+      expect(runAgentTest).toHaveBeenNthCalledWith(1, tenantId, "a1", {
+        message: "¿hacen domicilios?",
+        history: [],
+      });
+      expect(runAgentTest).toHaveBeenNthCalledWith(2, tenantId, "a1", {
+        message: "¿cuánto cuesta?",
+        history: [
+          { role: "User", content: "¿hacen domicilios?" },
+          { role: "Assistant", content: "Sí, en Laureles y Belén." },
+        ],
+      });
+    });
+
+    it("shows the recorded answer next to a different one, without claiming it changed", async () => {
+      const user = userEvent.setup();
+      listTestCases.mockResolvedValue([deliveries]);
+      runAgentTest
+        .mockResolvedValueOnce(result({ reply: "Sí, en Laureles y Belén." }))
+        .mockResolvedValueOnce(result({ reply: "Cuesta $6.000." }));
+      renderPanel();
+
+      await user.click(await screen.findByRole("button", { name: "Probar de nuevo" }));
+
+      expect(await screen.findByText("Igual que cuando guardaste el caso.")).toBeInTheDocument();
+      const recorded = await screen.findByText("Al guardar el caso respondió:");
+      expect(recorded.parentElement).toHaveTextContent("Cuesta $5.000.");
+      // The model rewords answers between runs, so a different text is not proof of a change.
+      expect(screen.queryByText(/Cambió/)).not.toBeInTheDocument();
+    });
+
+    it("stops the replay and says why when a question fails", async () => {
+      const user = userEvent.setup();
+      listTestCases.mockResolvedValue([deliveries]);
+      runAgentTest
+        .mockResolvedValueOnce(result({ reply: "Sí, en Laureles y Belén." }))
+        .mockRejectedValueOnce(new ApiError(502, "Model provider unavailable", "no"));
+      renderPanel();
+
+      await user.click(await screen.findByRole("button", { name: "Probar de nuevo" }));
+
+      expect(
+        await screen.findByText("El asistente no pudo responder ahora mismo. Inténtalo de nuevo en un momento."),
+      ).toBeInTheDocument();
+      expect(runAgentTest).toHaveBeenCalledTimes(2);
+    });
+
+    it("deletes a case", async () => {
+      const user = userEvent.setup();
+      listTestCases.mockResolvedValue([deliveries]);
+      renderPanel();
+
+      const list = await screen.findByRole("list", { name: "Casos guardados" });
+      await user.click(within(list).getByRole("button", { name: "Eliminar el caso Domicilios a Belén" }));
+
+      await waitFor(() => expect(deleteTestCase).toHaveBeenCalledWith(tenantId, "a1", "tc1"));
+      expect(screen.queryByText("Domicilios a Belén")).not.toBeInTheDocument();
+    });
+
+    it("stops offering to save once the assistant has the maximum", async () => {
+      const user = userEvent.setup();
+      listTestCases.mockResolvedValue(
+        Array.from({ length: 20 }, (_, index) => ({ ...deliveries, id: `tc${index}` })),
+      );
+      renderPanel();
+
+      expect(await screen.findByText(/20 de 20/)).toBeInTheDocument();
+      await user.type(screen.getByLabelText("Pregunta de prueba"), "hola{Enter}");
+      await screen.findByText("Sí, enviamos a Palmira.");
+
+      expect(screen.getByRole("button", { name: "Guardar como caso" })).toBeDisabled();
+    });
   });
 });

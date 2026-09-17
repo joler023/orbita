@@ -1,7 +1,7 @@
 import { ToastProvider } from "@/components/ui/toast";
 import { CurrentUserProvider } from "@/lib/session/current-user";
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AppShell } from "./app-shell";
 
 vi.mock("next/navigation", () => ({
@@ -9,24 +9,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 
-const { getTenant } = vi.hoisted(() => ({ getTenant: vi.fn() }));
-
-vi.mock("@/lib/api/auth", () => ({
-  getTenant: (...args: unknown[]) => getTenant(...args),
-  logout: vi.fn(),
-}));
+vi.mock("@/lib/api/auth", () => ({ logout: vi.fn() }));
 
 const currentUser = {
   userId: "u1",
   email: "ana@orbita.test",
   fullName: "Ana Pérez",
-  memberships: [{ tenantId: "tenant-1", slug: "panaderia", name: "Panadería", role: "Owner" as const }],
+  memberships: [
+    { tenantId: "tenant-1", slug: "panaderia", name: "Panadería Demo", role: "Owner" as const },
+  ],
 };
 
 describe("AppShell", () => {
-  beforeEach(() => {
-    getTenant.mockReset().mockResolvedValue({ name: "Panadería Demo" });
-  });
 
   it("keeps the sidebar out of the scrolling content column", async () => {
     render(

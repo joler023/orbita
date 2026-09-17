@@ -1,5 +1,6 @@
 import { CheckboxCard } from "@/components/ui/checkbox-card";
 import type { AiTool } from "@/lib/api/ai-agents";
+import { describeToolResult } from "./agent-format";
 
 export type AgentToolsFieldsProps = {
   catalog: ReadonlyArray<AiTool>;
@@ -24,7 +25,9 @@ export function AgentToolsFields({ catalog, selected, onChange }: AgentToolsFiel
           <CheckboxCard
             key={tool.key}
             title={tool.displayName}
-            description={tool.description}
+            description={[tool.description, describeToolResult(tool.resultsIn)]
+              .filter(Boolean)
+              .join(" ")}
             disabledReason={tool.isAvailable ? undefined : (tool.unavailableReason ?? "Todavía no está disponible.")}
             checked={selected.includes(tool.key)}
             onCheckedChange={(checked) => toggle(tool.key, checked)}

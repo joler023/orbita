@@ -1,7 +1,7 @@
 import { ToastProvider } from "@/components/ui/toast";
 import type { AiAgent, AiTool } from "@/lib/api/ai-agents";
 import { ApiError } from "@/lib/api/errors";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentEditor } from "./agent-editor";
@@ -34,6 +34,8 @@ const agent: AiAgent = {
   hasUnpublishedChanges: false,
   draft: null,
   tools: [],
+  guardrails: { blockedTopics: [], outOfScopeReply: "Eso lo ve alguien del equipo.", handoffReply: "Listo: dejo de responderte yo y la conversación queda para alguien del equipo." },
+  businessHours: null,
   isEnabled: false,
   conversationCount: 0,
   createdAt: "2026-09-11T12:00:00+00:00",
@@ -46,6 +48,7 @@ const tools: AiTool[] = [
     description: "Busca en lo que subiste.",
     isAvailable: true,
     unavailableReason: null,
+    resultsIn: null,
   },
 ];
 
@@ -73,6 +76,43 @@ describe("AgentEditor", () => {
     saveAiAgentDraft.mockReset();
     publishAiAgent.mockReset();
     discardAiAgentDraft.mockReset();
+  });
+
+  it("offers schedule and limits only once the agent exists, like knowledge and tests", () => {
+    renderEditor({ agent: null });
+    expect(screen.queryByRole("tab", { name: "Horario" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Límites" })).not.toBeInTheDocument();
+
+    cleanup();
+    renderEditor();
+    expect(screen.getByRole("tab", { name: "Horario" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Límites" })).toBeInTheDocument();
+  });
+
+  it.each([
+    ["Horario", "Guardar horario"],
+    ["Límites", "Guardar límites"],
+  ])("hides the publish footer on %s, which saves on its own", async (tab, ownSave) => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeVisible();
+
+    await user.click(screen.getByRole("tab", { name: tab }));
+
+    // Hidden, not just invisible: a screen reader must not offer two different saves either.
+    expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: ownSave })).toBeVisible();
+  });
+
+  it("marks the tab the panel actually belongs to", async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.click(screen.getByRole("tab", { name: "Respuestas repetidas" }));
+
+    expect(screen.getByRole("tab", { name: "Respuestas repetidas" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Instrucciones" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("saving leaves the change unpublished and says so", async () => {

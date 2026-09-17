@@ -6,11 +6,11 @@ Frontend de **Órbita**: un CRM conversacional multi-tenant con agentes de IA so
 
 `ORB-D01` dejó el sistema de diseño, el shell autenticado, el cliente HTTP con cookies y login/registro.
 
-Sobre eso está **Track C (agentes de IA)**: `ORB-C10` completo y `ORB-C11` a falta de créditos del proveedor de modelos. La pantalla `/t/[tenantId]/agente` crea y configura asistentes, gestiona sus documentos y los prueba, contra la API real. Al iniciar sesión se entra directo a tu organización, porque `GET /api/auth/me` ya devuelve las membresías.
+Sobre eso está **Track C (agentes de IA)**, ya en `develop`: `ORB-C10` y `ORB-C11`. La pantalla `/t/[tenantId]/agente` crea y configura asistentes, define sus límites, gestiona sus documentos y los prueba, contra la API real. Al iniciar sesión se entra directo a tu organización y, si perteneces a varias, puedes cambiar de una a otra desde el panel lateral.
 
-Todavía no existen la bandeja, el CRM ni el sitio público completo: Inicio muestra KPIs vacíos y el resto del menú son estados vacíos.
+Este repo también avanza ahora **Track A** (equipo, facturación, perfil) y **Track B** (canales y bandeja, de momento en esqueleto). El CRM y el sitio público completo siguen sin dueño activo: Inicio muestra KPIs vacíos y esas secciones son estados vacíos.
 
-Nada de Track C está mergeado: son 11 ramas apiladas sobre `develop`. La tabla del PR stack, lo que falta y el estado del backend están en [`HANDOFF.md`](./HANDOFF.md).
+Lo que falta, las decisiones tomadas y el estado del backend están en [`HANDOFF.md`](./HANDOFF.md).
 
 El backend vive en [`orbita-api`](https://github.com/joler023/orbita-api). Este dashboard llama a `api` directo (sin BFF), con `credentials: "include"`.
 
@@ -48,7 +48,7 @@ bun run refresh:openapi  # baja el OpenAPI de una API en marcha
 
 ## Convenciones
 
-Ver [`CLAUDE.md`](./CLAUDE.md). Commits sin coautoría de IA. Cada historia en su rama `feature/<nombre>`; cuando son varias seguidas se apilan (cada una sale de la anterior y su PR va contra la anterior), como está hoy en el PR stack de Track C.
+Ver [`CLAUDE.md`](./CLAUDE.md). Commits sin coautoría de IA. Cada historia en su rama `feature/<nombre>`; cuando son varias seguidas se apilan (cada una sale de la anterior y su PR va contra la anterior), como se hizo con las 11 ramas de Track C que ya entraron a `develop`.
 
 Ver [`HANDOFF.md`](./HANDOFF.md) para el estado de trabajo, el PR stack y los acuerdos con el backend.
 

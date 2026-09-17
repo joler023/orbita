@@ -12,6 +12,44 @@ export function formatAgentsMeta(total: number, active: number): string {
   return `${agents} · ${actives}`;
 }
 
+/**
+ * Where a tool's work shows up, and whether that screen exists in the dashboard yet. The API
+ * says which module (`resultsIn`); which modules are still placeholders is ours to know, so
+ * this is the single place to flip when one of them ships.
+ */
+type ToolDestination = {
+  ready: boolean;
+  whenReady: string;
+  notYet: string;
+};
+
+const TOOL_DESTINATIONS: Record<string, ToolDestination> = {
+  pipeline: {
+    ready: false,
+    whenReady: "Lo que registre aparece en Pipeline.",
+    notYet: "Lo que registre aparece en Pipeline, que todavía no puedes abrir desde el panel.",
+  },
+  // The one destination where "not built yet" costs more than data nobody reviews: a customer
+  // handed to the team keeps waiting while nobody in the dashboard can see them.
+  inbox: {
+    ready: false,
+    whenReady: "Las conversaciones que pase a tu equipo aparecen en Bandeja.",
+    notYet:
+      "Las conversaciones que pase a tu equipo quedan esperando, y todavía no puedes verlas desde el panel.",
+  },
+};
+
+export function describeToolResult(resultsIn: string | null): string | null {
+  if (!resultsIn) {
+    return null;
+  }
+  const destination = TOOL_DESTINATIONS[resultsIn];
+  if (!destination) {
+    return null;
+  }
+  return destination.ready ? destination.whenReady : destination.notYet;
+}
+
 export type StyleAxis<T extends string> = {
   levels: readonly [T, T, T];
   startLabel: string;
