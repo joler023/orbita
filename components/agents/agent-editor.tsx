@@ -28,12 +28,20 @@ import {
 } from "./agent-draft";
 import { AgentGuardrailsPanel } from "./agent-guardrails-panel";
 import { AgentSchedulePanel } from "./agent-schedule-panel";
+import { RepeatedAnswersPanel } from "./repeated-answers-panel";
 import { AgentInstructionsFields } from "./agent-instructions-fields";
 import { AgentToolsFields } from "./agent-tools-fields";
 import { KnowledgePanel } from "./knowledge-panel";
 import { TestBenchPanel } from "./test-bench-panel";
 
-type EditorTab = "instructions" | "tools" | "schedule" | "guardrails" | "knowledge" | "tests";
+type EditorTab =
+  | "instructions"
+  | "tools"
+  | "schedule"
+  | "guardrails"
+  | "reuse"
+  | "knowledge"
+  | "tests";
 
 const BASE_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
   { value: "instructions", label: "Instrucciones" },
@@ -43,6 +51,7 @@ const BASE_TABS: ReadonlyArray<{ value: EditorTab; label: string }> = [
 const SAVED_AGENT_TABS = [
   { value: "schedule", label: "Horario" },
   { value: "guardrails", label: "Límites" },
+  { value: "reuse", label: "Respuestas repetidas" },
   { value: "knowledge", label: "Conocimiento" },
   { value: "tests", label: "Pruebas" },
 ] as const;
@@ -226,6 +235,8 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
         onSaved={onSaved}
       />
     );
+  } else if (tab === "reuse" && agent) {
+    panel = <RepeatedAnswersPanel tenantId={tenantId} agentId={agent.id} />;
   } else if (tab === "knowledge" && agent) {
     panel = <KnowledgePanel tenantId={tenantId} agentId={agent.id} />;
   } else if (tab === "tests" && agent) {
@@ -253,10 +264,10 @@ export function AgentEditor({ tenantId, agent, onSaved, onDirtyChange, onCancelC
       <Tabs label="Secciones del asistente" items={tabs} value={tab} onChange={setTab}>
         {panel}
       </Tabs>
-      {/* Schedule and limits save on their own and apply at once: a second "Guardar" here
-          would be ambiguous. */}
+      {/* The tabs that apply at once save on their own: a second "Guardar" here would be
+          ambiguous. One tab, one save. */}
       <div
-        hidden={tab === "schedule" || tab === "guardrails"}
+        hidden={tab === "schedule" || tab === "guardrails" || tab === "reuse"}
         className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4"
       >
         {pendingNote ? <p className="mr-auto text-xs text-muted">{pendingNote}</p> : null}

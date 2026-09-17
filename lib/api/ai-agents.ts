@@ -242,3 +242,40 @@ export function toSaveRequest(agent: AiAgent): SaveAiAgentRequest {
     tools: source.tools,
   };
 }
+
+export const SEMANTIC_CACHE_LEVELS = ["Off", "Conservative", "Balanced", "Aggressive"] as const;
+
+export type SemanticCacheLevel = (typeof SEMANTIC_CACHE_LEVELS)[number];
+
+/**
+ * Reusing the previous answer when two customers ask almost the same thing (ORB-C12).
+ *
+ * `hitRate` is null while nobody has asked yet — which is not the same as 0%, and the
+ * screen must not read it as "never works". It is a share between 0 and 1.
+ */
+export type SemanticCache = {
+  level: SemanticCacheLevel;
+  hits: number;
+  misses: number;
+  hitRate: number | null;
+};
+
+function semanticCachePath(tenantId: string, agentId: string): string {
+  return `${agentsPath(tenantId)}/${agentId}/semantic-cache`;
+}
+
+export function getSemanticCache(tenantId: string, agentId: string): Promise<SemanticCache> {
+  return apiRequest<SemanticCache>(semanticCachePath(tenantId, agentId));
+}
+
+/** Applies immediately, like the rest of what limits how the assistant works. */
+export function setSemanticCacheLevel(
+  tenantId: string,
+  agentId: string,
+  level: SemanticCacheLevel,
+): Promise<SemanticCache> {
+  return apiRequest<SemanticCache>(semanticCachePath(tenantId, agentId), {
+    method: "PUT",
+    body: JSON.stringify({ level }),
+  });
+}
